@@ -107,7 +107,7 @@ export default function Dashboard() {
 	}
 
 	const generateHeatmapGrid = () => {
-		const startDate = getDateDaysAgo(90)
+		const startDate = getDateDaysAgo(365)
 		const endDate = new Date()
 		const days = []
 
@@ -183,21 +183,14 @@ export default function Dashboard() {
 			{/* Header */}
 			<div className="text-center">
 				<h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-					📈 Problem Solving Dashboard
+					Repsheet Dasboard
 				</h1>
 				<p className="text-gray-600 dark:text-gray-400">
 					Track your coding progress and performance metrics
 				</p>
 			</div>
 
-			{/* Stats Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-				<div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-xl text-white">
-					<div className="text-2xl font-bold">{totalProblems}</div>
-					<div className="text-blue-100">Total Problems</div>
-				</div>
-			</div>
-
+		
 			{/* Charts */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				{/* Status Chart */}
@@ -274,11 +267,11 @@ export default function Dashboard() {
 					Daily Activity Heatmap
 				</h2>
 				<div className="overflow-x-auto">
-					<div className="grid grid-cols-53 gap-1 min-w-max">
+					<div className="grid grid-cols-30 gap-1 w-5xl">
 						{generateHeatmapGrid().map((day, index) => (
 							<div
 								key={index}
-								className="w-3 h-3 rounded-sm hover:ring-2 hover:ring-blue-300 cursor-pointer transition-all"
+								className="w-3 h-3 rounded-full hover:ring-2 hover:ring-blue-300 cursor-pointer transition-all"
 								style={{
 									backgroundColor: getHeatmapColor(day.count),
 								}}

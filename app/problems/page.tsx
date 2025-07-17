@@ -5,7 +5,7 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 export default async function Page() {
-  const userId = "64d1f0f33a1c2b5e5cabc123"
+  const userId = process.env.USER_ID
 
   const problems = await prisma.problem.findMany({
     where: { userId },
