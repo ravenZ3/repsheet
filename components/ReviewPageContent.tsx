@@ -87,7 +87,7 @@ export default function ReviewPageContent({
               All Done for Today!
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mt-2">
-              You've reviewed {reviewedCount} problem(s) today. Come back tomorrow for more!
+              You&apos;ve reviewed {reviewedCount} problem(s) today. Come back tomorrow for more!
             </p>
           </div>
         )}
