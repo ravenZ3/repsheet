@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧠 Repsheet – Track. Retain. Repeat.
 
-## Getting Started
+Repsheet is a spaced repetition tool tailored for coding problem-solving. It began as a simple Excel sheet used to log and review problems and evolved into a full-stack application built with Next.js, MongoDB, Prisma, and the FSRS (Free Spaced Repetition Scheduler) algorithm.
 
-First, run the development server:
+---
+
+##  Features
+
+-  FSRS-based review scheduling
+-  Track solved problems
+-  View upcoming reviews
+-  OAuth login with Google & GitHub
+-  MongoDB + Prisma for database layer
+-  Deployed on Vercel
+
+---
+
+## 📈 Motivation
+
+We started with an **Excel sheet** — just columns for problem names, links, and review dates. Manually updating review intervals became unsustainable. So we built Repsheet:
+
+- **To automate review intervals using FSRS**
+- **To track progress painlessly**
+- **To make retention effortless**
+
+---
+
+## 🧱 Tech Stack
+
+- **Frontend**: Next.js (App Router)
+- **Backend**: API Routes + NextAuth.js
+- **Database**: MongoDB via Prisma ORM
+- **Authentication**: GitHub & Google OAuth
+- **Deployment**: Vercel
+
+---
+
+## 🧪 FSRS in Action
+
+The FSRS algorithm dynamically updates the next review date based on your rating:
+
+- **Again** → review sooner
+- **Hard** → moderate interval
+- **Good** → longer interval
+- **Easy** → exponential boost
+
+This lets you focus on what you *haven’t* mastered, instead of reviewing everything blindly.
+
+---
+
+## 🚀 Getting Started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+git clone https://github.com/your-username/repsheet.git
+cd repsheet
+pnpm install
+cp .env.example .env
+# Fill in the env variables
+npx prisma db push
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠 .env Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+You'll need:
 
-## Learn More
+```env
+GITHUB_ID=your_id
+GITHUB_SECRET=your_secret
+GOOGLE_CLIENT_ID=your_id
+GOOGLE_CLIENT_SECRET=your_secret
+DATABASE_URL=mongodb+srv://...
+NEXTAUTH_SECRET=your_secret
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🧾 License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+MIT
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🙌 Acknowledgements
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- FSRS: [OpenSpacedRepetition](https://github.com/open-spaced-repetition/fsrs.js)
+- Inspiration from [Anki] and countless hand-written review plans

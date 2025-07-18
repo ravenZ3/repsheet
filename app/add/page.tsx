@@ -218,25 +218,30 @@ export default function AddProblemPage() {
 		setFetchStatus("idle")
 
 		try {
-			let problemSlug = form.problemId.trim()
+			// --- START OF FIX ---
+			// The identifier can be a problem slug (e.g., "two-sum"), a number (e.g., "1"), or a full URL.
+			let identifier = form.problemId.trim()
 
-			if (problemSlug.startsWith("http")) {
-				const extractedSlug = extractProblemIdFromUrl(problemSlug)
+			// If it is a full URL, extract the slug from it.
+			if (identifier.startsWith("http")) {
+				const extractedSlug = extractProblemIdFromUrl(identifier)
 				if (!extractedSlug) {
 					throw new Error(
 						"Invalid LeetCode URL format. Please ensure it is a valid LeetCode problem URL."
 					)
 				}
-				problemSlug = extractedSlug
+				identifier = extractedSlug
 			}
 
-			problemSlug = problemSlug.toLowerCase().replace(/[^a-z0-9-]/g, "-")
-
+			// We no longer sanitize the input on the frontend.
+			// The backend API will be responsible for interpreting the identifier.
+			// This request now sends a generic `identifier` instead of a specific `titleSlug`.
 			const response = await fetch("/api/leetcode", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ titleSlug: problemSlug }),
+				body: JSON.stringify({ identifier }),
 			})
+			// --- END OF FIX ---
 
 			const clonedResponse = response.clone()
 			let result
