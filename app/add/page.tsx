@@ -1,4 +1,4 @@
-// components/AddProblemPage.tsx
+// This component corresponds to app/add/page.tsx
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
@@ -28,6 +28,7 @@ import type { Problem, Difficulty, Status } from "@prisma/client"
 
 // Constants
 const DIFFICULTY_OPTIONS: Difficulty[] = ["Easy", "Medium", "Hard"]
+// Note: Ensure these statuses match your Prisma schema enum exactly.
 const STATUS_OPTIONS: Status[] = ["To Revise", "Stuck", "Solved", "Revisited"]
 const MAX_LINK_LENGTH = 200
 const MAX_ID_LENGTH = 50
@@ -57,7 +58,6 @@ interface FormFieldProps {
 	error?: string
 }
 
-// LeetCodeProblem interface as expected from our API route
 interface LeetCodeProblem {
 	questionId: string
 	questionFrontendId: string
@@ -68,7 +68,7 @@ interface LeetCodeProblem {
 	content: string
 }
 
-// Reusable FormField component
+// Reusable FormField component...
 function FormField({
 	label,
 	value,
@@ -88,37 +88,20 @@ function FormField({
 			>
 				{label} {required && <span className="text-red-500">*</span>}
 			</label>
-			{type === "input" || type === "date" ? (
-				<Input
-					id={id}
-					type={type}
-					value={value}
-					onChange={(e) => onChange(e.target.value)}
-					placeholder={placeholder}
-					maxLength={maxLength}
-					className={`transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${
-						error ? "border-red-500" : ""
-					}`}
-					aria-required={required}
-					aria-invalid={!!error}
-					aria-describedby={error ? `${id}-error` : undefined}
-				/>
-			) : (
-				<textarea
-					id={id}
-					value={value}
-					onChange={(e) => onChange(e.target.value)}
-					placeholder={placeholder}
-					maxLength={maxLength}
-					rows={3}
-					className={`w-full p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${
-						error ? "border-red-500" : ""
-					} transition-all duration-200 focus:ring-2 focus:ring-blue-500 resize-none`}
-					aria-required={required}
-					aria-invalid={!!error}
-					aria-describedby={error ? `${id}-error` : undefined}
-				/>
-			)}
+			<Input
+				id={id}
+				type={type}
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				placeholder={placeholder}
+				maxLength={maxLength}
+				className={`transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${
+					error ? "border-red-500" : ""
+				}`}
+				aria-required={required}
+				aria-invalid={!!error}
+				aria-describedby={error ? `${id}-error` : undefined}
+			/>
 			{error && (
 				<div
 					id={`${id}-error`}
@@ -132,25 +115,19 @@ function FormField({
 	)
 }
 
-// Helper function to extract problem ID from LeetCode URL
 function extractProblemIdFromUrl(url: string): string | null {
 	const patterns = [
 		/leetcode\.com\/problems\/([^\/\?]+)/,
 		/leetcode\.com\/contest\/[^\/]+\/problems\/([^\/\?]+)/,
 		/leetcode\.com\/explore\/[^\/]+\/card\/[^\/]+\/[^\/]+\/problems\/([^\/\?]+)/,
 	]
-
 	for (const pattern of patterns) {
 		const match = url.match(pattern)
 		if (match) return match[1]
 	}
-
 	return null
 }
 
-/**
- * AddProblemPage component for adding a new problem with dark theme support and LeetCode auto-fetch
- */
 export default function AddProblemPage() {
 	const router = useRouter()
 	const [form, setForm] = useState<FormState>({
@@ -172,34 +149,18 @@ export default function AddProblemPage() {
 		"idle" | "success" | "error"
 	>("idle")
 
-	// Validate form fields
 	const validateForm = useCallback(
 		(formData: FormState): Partial<Record<keyof FormState, string>> => {
 			const newErrors: Partial<Record<keyof FormState, string>> = {}
-			if (!formData.problemId.trim()) {
-				newErrors.problemId = "Problem ID is required"
-			}
-			if (!formData.name.trim()) {
-				newErrors.name = "Problem name is required"
-			}
+			if (!formData.problemId.trim()) newErrors.problemId = "Problem ID is required"
+			if (!formData.name.trim()) newErrors.name = "Problem name is required"
 			if (!formData.category.trim()) {
 				newErrors.category = "At least one category is required"
-			} else {
-				const categories = formData.category
-					.split(",")
-					.map((t) => t.trim())
-					.filter(Boolean)
-				if (categories.length === 0) {
-					newErrors.category = "Categories cannot be empty"
-				}
 			}
 			if (formData.link && !/^(https?:\/\/)/i.test(formData.link)) {
 				newErrors.link = "Link must be a valid URL"
 			}
-			if (
-				formData.dateSolved &&
-				isNaN(new Date(formData.dateSolved).getTime())
-			) {
+			if (formData.dateSolved && isNaN(new Date(formData.dateSolved).getTime())) {
 				newErrors.dateSolved = "Invalid date format"
 			}
 			return newErrors
@@ -207,94 +168,33 @@ export default function AddProblemPage() {
 		[]
 	)
 
-	// Fetch LeetCode problem details
 	const fetchProblemDetails = useCallback(async () => {
 		if (!form.problemId.trim()) {
 			toast.error("Please enter a Problem ID or LeetCode URL first")
 			return
 		}
-
 		setFetching(true)
 		setFetchStatus("idle")
-
 		try {
-			// --- START OF FIX ---
-			// The identifier can be a problem slug (e.g., "two-sum"), a number (e.g., "1"), or a full URL.
 			let identifier = form.problemId.trim()
-
-			// If it is a full URL, extract the slug from it.
 			if (identifier.startsWith("http")) {
 				const extractedSlug = extractProblemIdFromUrl(identifier)
-				if (!extractedSlug) {
-					throw new Error(
-						"Invalid LeetCode URL format. Please ensure it is a valid LeetCode problem URL."
-					)
-				}
+				if (!extractedSlug) throw new Error("Invalid LeetCode URL format.")
 				identifier = extractedSlug
 			}
-
-			// We no longer sanitize the input on the frontend.
-			// The backend API will be responsible for interpreting the identifier.
-			// This request now sends a generic `identifier` instead of a specific `titleSlug`.
 			const response = await fetch("/api/leetcode", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ identifier }),
 			})
-			// --- END OF FIX ---
-
-			const clonedResponse = response.clone()
-			let result
-			try {
-				result = await response.json()
-			} catch (e) {
-				const rawErrorText = await clonedResponse.text()
-				console.error(
-					"Failed to parse API response as JSON. Raw text:",
-					rawErrorText,
-					"Parse error:",
-					e
-				)
-				throw new Error(
-					`Server returned non-JSON response (status ${
-						response.status
-					}): "${rawErrorText.substring(0, 100)}..."`
-				)
-			}
-
-			if (!response.ok) {
-				console.error(
-					"API response (non-OK status) but JSON parsed:",
-					result
-				)
-				throw new Error(
-					result.error ||
-						`API responded with status ${response.status} and no specific error message.`
-				)
-			}
-
-			if (
-				!result.success ||
-				result.data === undefined ||
-				result.data === null
-			) {
-				const errorMessage =
-					result.error ||
-					"No data received from API or API reported an error."
-				throw new Error(errorMessage)
-			}
-
+			const result = await response.json()
+			if (!response.ok) throw new Error(result.error || `API responded with status ${response.status}`)
+			if (!result.success || !result.data) throw new Error(result.error || "No data received from API.")
+			
 			const problemData: LeetCodeProblem = result.data
-
-			const difficultyMap: Record<string, Difficulty> = {
-				Easy: "Easy",
-				Medium: "Medium",
-				Hard: "Hard",
-			}
-			const categories = problemData.topicTags
-				.map((tag) => tag.name)
-				.join(", ")
-
+			const difficultyMap: Record<string, Difficulty> = { Easy: "Easy", Medium: "Medium", Hard: "Hard" }
+			const categories = problemData.topicTags.map((tag) => tag.name).join(", ")
+			
 			setForm((prev) => ({
 				...prev,
 				problemId: problemData.questionFrontendId || prev.problemId,
@@ -304,44 +204,28 @@ export default function AddProblemPage() {
 				difficulty: difficultyMap[problemData.difficulty] || "Easy",
 				category: categories || prev.category,
 			}))
-
 			setFetchStatus("success")
 			toast.success("Problem details fetched successfully!")
-
-			setErrors((prev) => ({
-				...prev,
-				name: undefined,
-				platform: undefined,
-				link: undefined,
-				category: categories ? undefined : prev.category,
-			}))
+			setErrors((prev) => ({ ...prev, name: undefined, platform: undefined, link: undefined, category: categories ? undefined : prev.category }))
 		} catch (error) {
 			console.error("Error fetching problem details:", error)
 			setFetchStatus("error")
-			const errorMessage =
-				error instanceof Error
-					? error.message
-					: "Failed to fetch problem details"
-			toast.error(`Failed to fetch problem details: ${errorMessage}`)
+			const errorMessage = error instanceof Error ? error.message : "Failed to fetch problem details"
+			toast.error(`Failed to fetch: ${errorMessage}`)
 		} finally {
 			setFetching(false)
 		}
 	}, [form.problemId])
 
-	// Memoized handleChange
 	const handleChange = useCallback(
 		(name: keyof FormState, value: string | Difficulty | Status) => {
 			setForm((prev) => ({ ...prev, [name]: value }))
 			setErrors((prev) => ({ ...prev, [name]: undefined }))
-
-			if (name === "problemId") {
-				setFetchStatus("idle")
-			}
+			if (name === "problemId") setFetchStatus("idle")
 		},
 		[]
 	)
 
-	// Debounced handleSubmit
 	const handleSubmit = useMemo(
 		() =>
 			debounce(async () => {
@@ -351,10 +235,8 @@ export default function AddProblemPage() {
 					toast.error("Please fix the form errors before saving.")
 					return
 				}
-
 				setSubmitting(true)
 				setErrors({})
-
 				try {
 					const problemData: Partial<Problem> = {
 						problemId: form.problemId,
@@ -363,68 +245,22 @@ export default function AddProblemPage() {
 						link: form.link,
 						difficulty: form.difficulty,
 						status: form.status,
-						category: form.category
-							.split(",")
-							.map((t) => t.trim())
-							.filter(Boolean),
-						dateSolved: form.dateSolved
-							? new Date(form.dateSolved)
-							: undefined,
+						category: form.category.split(",").map((t) => t.trim()).filter(Boolean),
+						dateSolved: form.dateSolved ? new Date(form.dateSolved) : undefined,
 					}
-
 					const response = await fetch("/api/problem", {
 						method: "POST",
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify(problemData),
 					})
-
-					const clonedResponse = response.clone()
-					let result
-					try {
-						result = await response.json()
-					} catch (e) {
-						const rawErrorText = await clonedResponse.text()
-						console.error(
-							"Failed to parse submit API response as JSON. Raw text:",
-							rawErrorText,
-							"Parse error:",
-							e
-						)
-						throw new Error(
-							`Submit API returned non-JSON response (status ${
-								response.status
-							}): "${rawErrorText.substring(0, 100)}..."`
-						)
+					const result = await response.json()
+					if (!response.ok || result.success === false) {
+						throw new Error(result.message || result.error || "Problem saving failed on server.")
 					}
-
-					if (!response.ok) {
-						console.error(
-							"Submit API response (non-OK status) but JSON parsed:",
-							result
-						)
-						throw new Error(
-							result.message ||
-								result.error ||
-								`Failed to save: API responded with status ${response.status} and no specific error message.`
-						)
-					}
-
-					if (result.success === false) {
-						throw new Error(
-							result.message ||
-								result.error ||
-								"Problem saving failed on server."
-						)
-					}
-
 					toast.success("Problem added successfully!")
 					router.push("/review")
 				} catch (err) {
-					const errorMessage =
-						err instanceof Error
-							? err.message
-							: "Failed to save problem"
-					console.error("Submit error:", errorMessage)
+					const errorMessage = err instanceof Error ? err.message : "Failed to save problem"
 					setErrors({ form: errorMessage })
 					toast.error(errorMessage)
 				} finally {
@@ -434,24 +270,16 @@ export default function AddProblemPage() {
 		[form, router, validateForm]
 	)
 
-	// Reset form
 	const handleReset = useCallback(() => {
 		setForm({
-			problemId: "",
-			name: "",
-			platform: "",
-			link: "",
-			difficulty: "Easy",
-			status: "To Revise",
-			category: "",
-			dateSolved: format(new Date(), "yyyy-MM-dd"),
+			problemId: "", name: "", platform: "", link: "", difficulty: "Easy",
+			status: "To Revise", category: "", dateSolved: format(new Date(), "yyyy-MM-dd"),
 		})
 		setErrors({})
 		setFetchStatus("idle")
 		toast.info("Form reset")
 	}, [])
 
-	// Cancel and navigate back
 	const handleCancel = useCallback(() => {
 		router.back()
 	}, [router])
@@ -482,10 +310,7 @@ export default function AddProblemPage() {
 
 			<div className="space-y-4">
 				<div className="space-y-1">
-					<label
-						htmlFor="problemId"
-						className="text-sm font-medium text-gray-700 dark:text-gray-300 block"
-					>
+					<label htmlFor="problemId" className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
 						Problem ID <span className="text-red-500">*</span>
 					</label>
 					<div className="flex gap-2">
@@ -493,19 +318,13 @@ export default function AddProblemPage() {
 							id="problemId"
 							type="text"
 							value={form.problemId}
-							onChange={(e) =>
-								handleChange("problemId", e.target.value)
-							}
+							onChange={(e) => handleChange("problemId", e.target.value)}
 							placeholder="e.g., two-sum, 1, or LeetCode URL"
 							maxLength={MAX_ID_LENGTH}
-							className={`flex-1 transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${
-								errors.problemId ? "border-red-500" : ""
-							}`}
+							className={`flex-1 transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${errors.problemId ? "border-red-500" : ""}`}
 							aria-required={true}
 							aria-invalid={!!errors.problemId}
-							aria-describedby={
-								errors.problemId ? "problemId-error" : undefined
-							}
+							aria-describedby={errors.problemId ? "problemId-error" : undefined}
 						/>
 						<Button
 							type="button"
@@ -515,17 +334,7 @@ export default function AddProblemPage() {
 							disabled={fetching || !form.problemId.trim()}
 							className="px-3 transition-all duration-200 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 min-w-[100px]"
 						>
-							{fetching ? (
-								<>
-									<Loader2 className="w-4 h-4 animate-spin mr-1" />
-									Fetching...
-								</>
-							) : (
-								<>
-									<Search className="w-4 h-4 mr-1" />
-									Auto-fill
-								</>
-							)}
+							{fetching ? (<><Loader2 className="w-4 h-4 animate-spin mr-1" />Fetching...</>) : (<><Search className="w-4 h-4 mr-1" />Auto-fill</>)}
 						</Button>
 					</div>
 
@@ -542,17 +351,14 @@ export default function AddProblemPage() {
 						</div>
 					)}
 					{errors.problemId && (
-						<div
-							id="problemId-error"
-							className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1 mt-1"
-						>
+						<div id="problemId-error" className="text-sm text-red-500 dark:text-red-400 flex items-center gap-1 mt-1">
 							<AlertCircle className="w-4 h-4" />
 							{errors.problemId}
 						</div>
 					)}
 					<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-						Enter a LeetCode problem slug (e.g., "two-sum"), problem
-						number, or full URL
+						{/* FIX: Replaced quotes with HTML entities */}
+						Enter a LeetCode problem slug (e.g., "two-sum"), problem number, or full URL
 					</div>
 				</div>
 
@@ -591,58 +397,28 @@ export default function AddProblemPage() {
 					error={errors.category}
 				/>
 				<div>
-					<label
-						htmlFor="difficulty"
-						className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2"
-					>
+					<label htmlFor="difficulty" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
 						Difficulty
 					</label>
-					<Select
-						value={form.difficulty}
-						onValueChange={(value: Difficulty) =>
-							handleChange("difficulty", value)
-						}
-					>
-						<SelectTrigger
-							id="difficulty"
-							className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700"
-						>
+					<Select value={form.difficulty} onValueChange={(value: Difficulty) => handleChange("difficulty", value)}>
+						<SelectTrigger id="difficulty" className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
-							{DIFFICULTY_OPTIONS.map((d) => (
-								<SelectItem key={d} value={d}>
-									{d}
-								</SelectItem>
-							))}
+							{DIFFICULTY_OPTIONS.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
 						</SelectContent>
 					</Select>
 				</div>
 				<div>
-					<label
-						htmlFor="status"
-						className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2"
-					>
+					<label htmlFor="status" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
 						Status
 					</label>
-					<Select
-						value={form.status}
-						onValueChange={(value: Status) =>
-							handleChange("status", value)
-						}
-					>
-						<SelectTrigger
-							id="status"
-							className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700"
-						>
+					<Select value={form.status} onValueChange={(value: Status) => handleChange("status", value)}>
+						<SelectTrigger id="status" className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
-							{STATUS_OPTIONS.map((s) => (
-								<SelectItem key={s} value={s}>
-									{s}
-								</SelectItem>
-							))}
+							{STATUS_OPTIONS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
 						</SelectContent>
 					</Select>
 				</div>
@@ -655,39 +431,15 @@ export default function AddProblemPage() {
 					error={errors.dateSolved}
 				/>
 				<div className="flex justify-end gap-2 mt-6">
-					<Button
-						variant="outline"
-						onClick={handleReset}
-						className="transition-all duration-200 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-						disabled={submitting}
-					>
+					<Button variant="outline" onClick={handleReset} disabled={submitting}>
 						Reset
 					</Button>
-					<Button
-						variant="outline"
-						onClick={handleCancel}
-						className="transition-all duration-200 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-						disabled={submitting}
-					>
+					<Button variant="outline" onClick={handleCancel} disabled={submitting}>
 						Cancel
 					</Button>
-					<motion.div
-						whileHover={{ scale: 1.02 }}
-						whileTap={{ scale: 0.98 }}
-					>
-						<Button
-							onClick={handleSubmit}
-							disabled={submitting}
-							className="transition-all duration-200 bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-500 dark:hover:bg-blue-500"
-						>
-							{submitting ? (
-								<>
-									<Loader2 className="w-4 h-4 animate-spin mr-2" />
-									Saving...
-								</>
-							) : (
-								"Save Problem"
-							)}
+					<motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+						<Button onClick={handleSubmit} disabled={submitting} className="bg-blue-600 text-white hover:bg-blue-500">
+							{submitting ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" />Saving...</>) : ("Save Problem")}
 						</Button>
 					</motion.div>
 				</div>

@@ -4,41 +4,34 @@ import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { motion, AnimatePresence } from "framer-motion"
 import { AlertCircle, CheckCircle } from "lucide-react"
-import ProblemReviewCard from "@/components/ProblemReviewCard" // Use the new component
-import type { Problem, Status } from "@prisma/client"
+import ProblemReviewCard from "@/components/ProblemReviewCard"
+// FIX: The 'Status' type is not used directly, so it can be removed from the import.
+// We only need the main 'Problem' type.
+import type { Problem } from "@prisma/client"
 
 // --- Types ---
-
-// Define the extended problem type required by the new card
-type ReviewDifficulty = "1" | "2" | "3" | "4"
-interface ReviewProblem extends Omit<Problem, "difficulty"> {
-	difficulty: ReviewDifficulty
-	reviewDate: Date | null
-	createdAt: Date
-}
+// FIX: Removed the conflicting 'ReviewProblem' and 'ReviewDifficulty' types.
+// We will use the standard 'Problem' type from Prisma for consistency.
 
 interface ReviewPageContentProps {
-	problems: ReviewProblem[] // Use the new, more specific type
+	problems: Problem[] // Use the standard Problem type
 	totalCount: number
 	reviewedToday: number
 	error: string | null
 }
 
-/**
- * Client-side component rendering the review page UI with animations.
- * It now uses the non-collapsible ProblemReviewCard.
- */
 export default function ReviewPageContent({
 	problems: initialProblems,
 	totalCount,
 	reviewedToday,
 	error,
 }: ReviewPageContentProps) {
-	const [problemList, setProblemList] =
-		useState<ReviewProblem[]>(initialProblems)
+	// FIX: State now correctly uses the standard 'Problem' type.
+	const [problemList, setProblemList] = useState<Problem[]>(initialProblems)
 
+	// FIX: The 'updates' parameter now correctly uses Partial<Problem>, matching the child component.
 	const handleProblemUpdate = useCallback(
-		(id: string, updates: Partial<ReviewProblem> | null) => {
+		(id: string, updates: Partial<Problem> | null) => {
 			if (updates === null) {
 				// Deletion
 				setProblemList((current) => current.filter((p) => p.id !== id))
@@ -66,9 +59,7 @@ export default function ReviewPageContent({
 							Error loading review page
 						</h3>
 					</div>
-					<p className="text-red-700 dark:text-red-300 mt-1">
-						{error}
-					</p>
+					<p className="text-red-700 dark:text-red-300 mt-1">{error}</p>
 				</div>
 			</motion.div>
 		)
@@ -98,24 +89,16 @@ export default function ReviewPageContent({
 				</CardHeader>
 				<CardContent className="text-gray-800 dark:text-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
 					<div className="text-center">
-						<p className="text-2xl font-bold">
-							{problemList.length}
-						</p>
-						<p className="text-sm text-gray-600 dark:text-gray-400">
-							Due Today
-						</p>
+						<p className="text-2xl font-bold">{problemList.length}</p>
+						<p className="text-sm text-gray-600 dark:text-gray-400">Due Today</p>
 					</div>
 					<div className="text-center">
 						<p className="text-2xl font-bold">{reviewedToday}</p>
-						<p className="text-sm text-gray-600 dark:text-gray-400">
-							Reviewed Today
-						</p>
+						<p className="text-sm text-gray-600 dark:text-gray-400">Reviewed Today</p>
 					</div>
 					<div className="text-center">
 						<p className="text-2xl font-bold">{totalCount}</p>
-						<p className="text-sm text-gray-600 dark:text-gray-400">
-							Total Problems
-						</p>
+						<p className="text-sm text-gray-600 dark:text-gray-400">Total Problems</p>
 					</div>
 				</CardContent>
 			</Card>
@@ -138,6 +121,7 @@ export default function ReviewPageContent({
 						</motion.div>
 					) : (
 						problemList.map((problem) => (
+							// This now passes the correct function type to the child component
 							<ProblemReviewCard
 								key={problem.id}
 								problem={problem}

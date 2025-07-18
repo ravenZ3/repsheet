@@ -19,13 +19,31 @@ import {
 	ResizablePanelGroup,
 	ResizablePanel,
 	ResizableHandle,
-} from "@/components/ui/resizable" // Make sure this path is correct
+} from "@/components/ui/resizable"
 
+// --- Define specific types for our data ---
 type ChartData = { name: string; value: number }[]
+type HeatmapData = { date: string; count: number }[]
 type DashboardData = {
 	status: ChartData
 	difficulty: ChartData
-	heatmap: { date: string; count: number }[]
+	heatmap: HeatmapData
+}
+
+// --- FIX: Define a type for the Tooltip props to avoid 'any' ---
+interface TooltipPayload {
+	name: string
+	value: number | string
+	payload: {
+		solved?: number
+		attempted?: number
+	}
+}
+
+interface TooltipProps {
+	active?: boolean
+	payload?: TooltipPayload[]
+	label?: string
 }
 
 export default function Dashboard() {
@@ -57,7 +75,7 @@ export default function Dashboard() {
 		fetchData()
 	}, [])
 
-	const STATUS_COLORS = {
+	const STATUS_COLORS: { [key: string]: string } = {
 		Solved: "#10b981",
 		Attempted: "#fbbf24",
 		Todo: "#ef4444",
@@ -65,7 +83,7 @@ export default function Dashboard() {
 		Review: "#8b5cf6",
 	}
 
-	const DIFFICULTY_COLORS = {
+	const DIFFICULTY_COLORS: { [key: string]: string } = {
 		Easy: "#10b981",
 		Medium: "#fbbf24",
 		Hard: "#ef4444",
@@ -73,7 +91,7 @@ export default function Dashboard() {
 
 	const getStatusColor = (name: string, index: number) => {
 		return (
-			STATUS_COLORS[name as keyof typeof STATUS_COLORS] ||
+			STATUS_COLORS[name] ||
 			Object.values(STATUS_COLORS)[
 				index % Object.values(STATUS_COLORS).length
 			]
@@ -81,16 +99,14 @@ export default function Dashboard() {
 	}
 
 	const getDifficultyColor = (name: string) => {
-		return (
-			DIFFICULTY_COLORS[name as keyof typeof DIFFICULTY_COLORS] ||
-			"#3b82f6"
-		)
+		return DIFFICULTY_COLORS[name] || "#3b82f6"
 	}
 
-	const CustomTooltip = ({ active, payload, label }: any) => {
+	// --- FIX: Apply the TooltipProps type here ---
+	const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
 		if (active && payload && payload.length) {
 			const data = payload[0].payload
-			// For Area chart, show both values
+			// For Area chart (trend)
 			if (data.solved !== undefined) {
 				return (
 					<div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl backdrop-blur-sm">
@@ -112,7 +128,7 @@ export default function Dashboard() {
 			return (
 				<div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl backdrop-blur-sm">
 					<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-						{label}:{" "}
+						{label || payload[0].name}:{" "}
 						<span className="font-bold text-blue-600">
 							{payload[0].value}
 						</span>
@@ -169,7 +185,6 @@ export default function Dashboard() {
 		return "#216e39"
 	}
 
-	// Generate trend data from heatmap data for the last 30 days
 	const generateTrendData = () => {
 		if (!data.heatmap || data.heatmap.length === 0) return []
 		const trendMap = new Map<string, number>()
@@ -188,7 +203,7 @@ export default function Dashboard() {
 					day: "numeric",
 				}),
 				solved: count,
-				attempted: Math.ceil(count * 0.3), // Faking some 'attempted' data
+				attempted: Math.ceil(count * 0.3),
 			})
 		}
 		return trendResult
@@ -265,7 +280,6 @@ export default function Dashboard() {
 											outerRadius="80%"
 											label={({
 												name,
-												value,
 												percent,
 											}) =>
 												`${name}: ${(
@@ -451,16 +465,7 @@ export default function Dashboard() {
 											(day, index) => (
 												<div
 													key={index}
-													className="
-                                                    w-4 h-4
-                                                    rounded-sm
-                                                    hover:ring-2 hover:ring-blue-400 hover:ring-offset-1
-                                                    hover:scale-125
-                                                    cursor-pointer
-                                                    transition-all duration-200 ease-in-out
-                                                    border border-gray-300/40 dark:border-gray-600/40
-                                                    shadow-sm
-                                                "
+													className="w-4 h-4 rounded-sm hover:ring-2 hover:ring-blue-400 hover:ring-offset-1 hover:scale-125 cursor-pointer transition-all duration-200 ease-in-out border border-gray-300/40 dark:border-gray-600/40 shadow-sm"
 													style={{
 														backgroundColor:
 															getHeatmapColor(
@@ -531,7 +536,7 @@ export default function Dashboard() {
 											</p>
 											<p className="text-sm text-gray-500 dark:text-gray-400">
 												{new Date(
-													activity.date + "T00:00:00" // Ensure consistent date parsing
+													activity.date + "T00:00:00"
 												).toLocaleDateString("en-US", {
 													weekday: "long",
 													month: "long",

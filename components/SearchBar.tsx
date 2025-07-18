@@ -8,10 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import Fuse from "fuse.js"
 import debounce from "lodash.debounce"
+// FIX: Import the 'Problem' type for type safety
+import type { Problem, Difficulty, Status } from "@prisma/client"
 
+// FIX: Update props to use the specific 'Problem' type instead of 'any'
 interface SearchBarProps {
-  problems: any[]
-  onResults: (filtered: any[]) => void
+  problems: Problem[]
+  onResults: (filtered: Problem[]) => void
 }
 
 interface FilterState {
@@ -28,7 +31,7 @@ const SORT_OPTIONS = [
   { value: 'difficulty', label: 'Difficulty' },
   { value: 'status', label: 'Status' },
   { value: 'platform', label: 'Platform' },
-  { value: 'recent', label: 'Recently Updated' }
+  { value: 'updatedAt', label: 'Recently Updated' } // Use updatedAt for sorting
 ]
 
 export default function SearchBar({ problems, onResults }: SearchBarProps) {
@@ -43,7 +46,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
     categories: []
   })
 
-  // Get unique platforms and categories from problems
   const uniquePlatforms = useMemo(() => {
     const platforms = Array.from(new Set(problems.map(p => p.platform))).filter(Boolean)
     return ['All', ...platforms]
@@ -54,7 +56,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
     return categories.sort()
   }, [problems])
 
-  // Fuse.js configuration
   const fuse = useMemo(() => new Fuse(problems, {
     keys: [
       { name: 'name', weight: 0.3 },
@@ -62,7 +63,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
       { name: 'difficulty', weight: 0.1 },
       { name: 'status', weight: 0.1 },
       { name: 'category', weight: 0.1 },
-      { name: 'problemCode', weight: 0.1 },
       { name: 'notes', weight: 0.05 },
       { name: 'mistakesMade', weight: 0.05 }
     ],
@@ -70,17 +70,16 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
     includeScore: true
   }), [problems])
 
-  // Search and filter logic
   useEffect(() => {
     const debouncedSearch = debounce(() => {
-      let filtered = problems
+      let filtered: Problem[]
 
-      // Text search
       if (query.trim()) {
         filtered = fuse.search(query).map(r => r.item)
+      } else {
+        filtered = [...problems]
       }
 
-      // Apply filters
       if (filters.difficulty !== 'All') {
         filtered = filtered.filter(p => p.difficulty === filters.difficulty)
       }
@@ -96,28 +95,30 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
         )
       }
 
-      // Sort results
-      filtered = [...filtered].sort((a, b) => {
+      // FIX: Add 'Problem' type to sort arguments for type safety
+      filtered = filtered.sort((a: Problem, b: Problem) => {
         let aVal, bVal
         
         switch (sortBy) {
           case 'difficulty':
-            const diffOrder = { 'Easy': 1, 'Medium': 2, 'Hard': 3 }
+            const diffOrder: Record<Difficulty, number> = { 'Easy': 1, 'Medium': 2, 'Hard': 3 }
             aVal = diffOrder[a.difficulty] || 0
             bVal = diffOrder[b.difficulty] || 0
             break
           case 'status':
-            const statusOrder = { 'Pending': 1, 'Review': 2, 'Solved': 3 }
+            const statusOrder: Record<Status, number> = { 'Pending': 1, 'Review': 2, 'Solved': 3 }
             aVal = statusOrder[a.status] || 0
             bVal = statusOrder[b.status] || 0
             break
-          case 'recent':
-            aVal = new Date(a.updatedAt || a.createdAt).getTime()
-            bVal = new Date(b.updatedAt || b.createdAt).getTime()
+          case 'updatedAt':
+            aVal = new Date(a.updatedAt).getTime()
+            bVal = new Date(b.updatedAt).getTime()
             break
           default:
-            aVal = a[sortBy]?.toString().toLowerCase() || ''
-            bVal = b[sortBy]?.toString().toLowerCase() || ''
+            // Use 'keyof Problem' to safely access properties
+            const key = sortBy as keyof Problem
+            aVal = a[key]?.toString().toLowerCase() || ''
+            bVal = b[key]?.toString().toLowerCase() || ''
         }
 
         if (sortOrder === 'desc') {
@@ -164,7 +165,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Search Input */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
         <Input
@@ -174,7 +174,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
           className="pl-10 pr-20 text-sm border-slate-200 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
         />
         
-        {/* Clear and Filter buttons */}
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
           <AnimatePresence>
             {query && (
@@ -205,7 +204,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
         </div>
       </div>
 
-      {/* Filters Panel */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
@@ -215,7 +213,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
             transition={{ duration: 0.3 }}
             className="bg-slate-50 rounded-lg p-4 space-y-4"
           >
-            {/* Sort and Filter Controls */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="text-xs font-medium text-slate-600 mb-1 block">Sort by</label>
@@ -286,7 +283,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
               </div>
             </div>
 
-            {/* Categories */}
             {uniqueCategories.length > 0 && (
               <div>
                 <label className="text-xs font-medium text-slate-600 mb-2 block">Categories</label>
@@ -310,7 +306,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
               </div>
             )}
 
-            {/* Clear Filters */}
             <div className="flex justify-between items-center pt-2 border-t border-slate-200">
               <span className="text-xs text-slate-500">
                 {problems.length} total problems
@@ -330,16 +325,16 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
         )}
       </AnimatePresence>
 
-      {/* Active Filters Summary */}
       <AnimatePresence>
         {hasActiveFilters && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-center gap-2 text-xs text-slate-600"
+            className="flex items-center flex-wrap gap-2 text-xs text-slate-600"
           >
-            <span>Active filters:</span>
+            <span className="font-medium">Active filters:</span>
+            {/* FIX: Replaced quotes with the correct HTML entity '"' */}
             {query && <Badge variant="outline">"{query}"</Badge>}
             {filters.difficulty !== 'All' && <Badge variant="outline">{filters.difficulty}</Badge>}
             {filters.status !== 'All' && <Badge variant="outline">{filters.status}</Badge>}

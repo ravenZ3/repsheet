@@ -34,18 +34,18 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import debounce from "lodash.debounce"
-import isEqual from "lodash/isEqual"
+// FIX: Removed unused 'isEqual' import
+// import isEqual from "lodash/isEqual"
 import { useRouter } from "next/navigation"
-import type { Problem, Difficulty, Status } from "@prisma/client" // Import Prisma types
+import type { Problem, Difficulty, Status } from "@prisma/client"
 
-// Constants
+// Constants remain the same...
 const DIFFICULTY_OPTIONS: Difficulty[] = ["Easy", "Medium", "Hard"]
-// Make sure these statuses match your Prisma schema enum
 const STATUS_OPTIONS: Status[] = ["Pending", "Solved", "Review"]
 const MAX_INPUT_LENGTH = 1000
 const DEBOUNCE_DELAY = 1000
 
-// Type definitions
+// Type definitions remain the same...
 interface ProblemRowProps {
 	problem: Problem | null
 	onUpdate?: (id: string, updates: Partial<Problem> | null) => void
@@ -73,10 +73,10 @@ interface FormFieldProps {
 	type?: "input" | "textarea"
 	maxLength?: number
 	id: string
-	onBlur?: () => void // Add onBlur for auto-saving
+	onBlur?: () => void
 }
 
-// Reusable FormField component
+// Reusable FormField component remains the same...
 function FormField({
 	label,
 	value,
@@ -128,24 +128,20 @@ function FormField({
  * ProblemRow component for displaying, editing, and deleting a problem's details
  */
 export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
+	// FIX: All hooks are now at the top level of the component, before any returns.
 	const router = useRouter()
-
-	if (!problem) {
-		return null
-	}
-
 	const [open, setOpen] = useState(false)
 	const [settingsOpen, setSettingsOpen] = useState(false)
 	const [editableForm, setEditableForm] = useState<EditableForm>({
-		notes: problem.notes || "",
-		mistakesMade: problem.mistakesMade || "",
+		notes: problem?.notes || "",
+		mistakesMade: problem?.mistakesMade || "",
 	})
 	const [settingsForm, setSettingsForm] = useState<SettingsForm>({
-		name: problem.name || "",
-		platform: problem.platform || "",
-		difficulty: problem.difficulty, // No '||' needed if required in schema
-		status: problem.status, // No '||' needed if required in schema
-		category: problem.category?.join(", ") || "",
+		name: problem?.name || "",
+		platform: problem?.platform || "",
+		difficulty: problem?.difficulty || "Easy",
+		status: problem?.status || "Pending",
+		category: problem?.category?.join(", ") || "",
 	})
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -153,9 +149,9 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 	const [settingsSaving, setSettingsSaving] = useState(false)
 	const [deleting, setDeleting] = useState(false)
 
-	// Memoized styles remain the same...
+	// Memoized styles
 	const statusStyle = useMemo(() => {
-		switch (problem.status) {
+		switch (problem?.status) {
 			case "Solved":
 				return {
 					color: "text-emerald-600 dark:text-emerald-400",
@@ -167,20 +163,16 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 					bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700",
 				}
 			case "Pending":
-				return {
-					color: "text-gray-600 dark:text-gray-400",
-					bg: "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700",
-				}
 			default:
 				return {
 					color: "text-gray-600 dark:text-gray-400",
 					bg: "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700",
 				}
 		}
-	}, [problem.status])
+	}, [problem?.status])
 
 	const difficultyStyle = useMemo(() => {
-		switch (problem.difficulty) {
+		switch (problem?.difficulty) {
 			case "Easy":
 				return {
 					color: "text-green-600 dark:text-green-400",
@@ -202,12 +194,13 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 					bg: "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700",
 				}
 		}
-	}, [problem.difficulty])
+	}, [problem?.difficulty])
 
-	// Debounced saveChanges function
 	const saveChanges = useMemo(
 		() =>
 			debounce(async (updates: Partial<Problem>) => {
+				if (!problem?.id) return
+
 				setSaving(true)
 				setError(null)
 				try {
@@ -218,44 +211,34 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 					})
 
 					if (!response.ok) {
-						throw new Error(
-							`Failed to save: ${response.statusText}`
-						)
+						throw new Error(`Failed to save: ${response.statusText}`)
 					}
 
 					const updatedProblem: Problem = await response.json()
 					setLastSaved(new Date())
-					onUpdate?.(problem.id, updatedProblem) // Signal update to parent
+					onUpdate?.(problem.id, updatedProblem)
 					toast.success("Changes saved successfully")
 				} catch (err) {
-					const errorMessage =
-						err instanceof Error
-							? err.message
-							: "Failed to save changes"
+					const errorMessage = err instanceof Error ? err.message : "Failed to save changes"
 					setError(errorMessage)
 					toast.error(errorMessage)
 				} finally {
 					setSaving(false)
 				}
 			}, DEBOUNCE_DELAY),
-		[problem.id, onUpdate]
+		[problem?.id, onUpdate]
 	)
 
-	// Save changes before dialog close or blur
 	const savePendingChanges = useCallback(() => {
-		// Check for unsaved changes in notes/mistakes
-		if (
-			problem.notes !== editableForm.notes ||
-			problem.mistakesMade !== editableForm.mistakesMade
-		) {
-			saveChanges.cancel() // Cancel any pending debounce
+		if (!problem) return
+		if (problem.notes !== editableForm.notes || problem.mistakesMade !== editableForm.mistakesMade) {
+			saveChanges.cancel()
 			saveChanges(editableForm)
 		}
 	}, [editableForm, problem, saveChanges])
 
-	// Handle delete
 	const handleDelete = useCallback(async () => {
-		if (!confirm(`Are you sure you want to delete "${problem.name}"?`)) {
+		if (!problem || !confirm(`Are you sure you want to delete "${problem.name}"?`)) {
 			return
 		}
 
@@ -272,23 +255,19 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 			if (!response.ok) {
 				throw new Error(`Failed to delete: ${response.statusText}`)
 			}
-
 			toast.success("Problem deleted successfully")
-
-			// Method 2: Refresh server data (uncomment if you prefer this)
 			router.refresh()
 		} catch (err) {
-			const errorMessage =
-				err instanceof Error ? err.message : "Failed to delete problem"
+			const errorMessage = err instanceof Error ? err.message : "Failed to delete problem"
 			setError(errorMessage)
 			toast.error(errorMessage)
 		} finally {
 			setDeleting(false)
 			setSettingsOpen(false)
 		}
-	}, [problem.id, problem.name, onUpdate, router])
+		// FIX: Removed 'onUpdate' from dependency array as it wasn't being used.
+	}, [problem, router])
 
-	// Event handlers
 	const handleEditableChange = useCallback(
 		(key: keyof EditableForm, value: string) => {
 			setEditableForm((prev) => ({
@@ -308,49 +287,33 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		[]
 	)
 
-	// Auto-save editable fields
 	useEffect(() => {
-		// Only save if there's an actual change
-		if (
-			problem.notes !== editableForm.notes ||
-			problem.mistakesMade !== editableForm.mistakesMade
-		) {
+		if (!problem) return
+		if (problem.notes !== editableForm.notes || problem.mistakesMade !== editableForm.mistakesMade) {
 			saveChanges(editableForm)
 		}
-	}, [editableForm, saveChanges, problem.notes, problem.mistakesMade])
+	}, [editableForm, saveChanges, problem])
 
-	// Save settings changes
 	const handleSettingsSave = useCallback(async () => {
 		if (!settingsForm.name.trim()) {
 			setError("Problem name is required")
 			return
 		}
-
-		const categories = settingsForm.category
-			.split(",")
-			.map((t) => t.trim())
-			.filter(Boolean)
+		const categories = settingsForm.category.split(",").map((t) => t.trim()).filter(Boolean)
 		if (categories.length === 0) {
 			setError("At least one category is required")
 			return
 		}
-
 		setSettingsSaving(true)
-		const updates: Partial<Problem> = {
-			...settingsForm,
-			category: categories,
-		}
-
-		// Use the saveChanges function to send the update
-		saveChanges.cancel() // Cancel any debounced saves
+		const updates: Partial<Problem> = { ...settingsForm, category: categories }
+		saveChanges.cancel()
 		await saveChanges(updates)
-
 		setSettingsSaving(false)
 		setSettingsOpen(false)
 	}, [settingsForm, saveChanges])
 
-	// Reset settings form
 	const handleSettingsReset = useCallback(() => {
+		if (!problem) return
 		setSettingsForm({
 			name: problem.name || "",
 			platform: problem.platform || "",
@@ -361,19 +324,22 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		setError(null)
 	}, [problem])
 
-	// Format last saved time...
 	const formatLastSaved = useCallback((date: Date) => {
 		const now = new Date()
 		const diff = now.getTime() - date.getTime()
 		const minutes = Math.floor(diff / 60000)
-
 		if (minutes < 1) return "just now"
 		if (minutes === 1) return "1 minute ago"
 		if (minutes < 60) return `${minutes} minutes ago`
 		return date.toLocaleTimeString()
 	}, [])
 
-	// The rest of the JSX remains the same...
+	// The early return is now AFTER all the hooks have been called.
+	if (!problem) {
+		return null
+	}
+	
+	// JSX for rendering remains the same...
 	return (
 		<motion.div
 			layout
