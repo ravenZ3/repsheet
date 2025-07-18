@@ -76,8 +76,8 @@ model Problem {
   platform       String?
   problemCode    String?
   link           String?
-  difficulty     String
-  status         String
+  difficulty     Difficulty
+  status         Status
   category       String[]
   notes          String?
   mistakesMade   String?
