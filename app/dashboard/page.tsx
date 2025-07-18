@@ -30,7 +30,7 @@ type DashboardData = {
 	heatmap: HeatmapData
 }
 
-// --- FIX: Define a type for the Tooltip props to avoid 'any' ---
+// --- Type for the Tooltip props ---
 interface TooltipPayload {
 	name: string
 	value: number | string
@@ -102,11 +102,9 @@ export default function Dashboard() {
 		return DIFFICULTY_COLORS[name] || "#3b82f6"
 	}
 
-	// --- FIX: Apply the TooltipProps type here ---
 	const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
 		if (active && payload && payload.length) {
 			const data = payload[0].payload
-			// For Area chart (trend)
 			if (data.solved !== undefined) {
 				return (
 					<div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl backdrop-blur-sm">
@@ -124,7 +122,6 @@ export default function Dashboard() {
 					</div>
 				)
 			}
-			// For Pie/Bar charts
 			return (
 				<div className="bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl backdrop-blur-sm">
 					<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -155,10 +152,9 @@ export default function Dashboard() {
 
 	const generateHeatmapGrid = () => {
 		const endDate = new Date()
-		const days = 91 // 13 weeks * 7 days
+		const days = 91
 		const startDate = getDateDaysAgo(days - 1)
 		const dayArray = []
-
 		for (
 			let d = new Date(startDate);
 			d <= endDate;
@@ -173,7 +169,6 @@ export default function Dashboard() {
 				count: heatmapData?.count || 0,
 			})
 		}
-
 		return dayArray
 	}
 
@@ -188,10 +183,7 @@ export default function Dashboard() {
 	const generateTrendData = () => {
 		if (!data.heatmap || data.heatmap.length === 0) return []
 		const trendMap = new Map<string, number>()
-		data.heatmap.forEach((item) => {
-			trendMap.set(item.date, item.count)
-		})
-
+		data.heatmap.forEach((item) => trendMap.set(item.date, item.count))
 		const trendResult = []
 		for (let i = 29; i >= 0; i--) {
 			const date = getDateDaysAgo(i)
@@ -246,7 +238,6 @@ export default function Dashboard() {
 
 	return (
 		<div className="max-w-7xl mx-auto mt-10 px-4 space-y-8">
-			{/* Header */}
 			<div className="text-center">
 				<h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
 					Repsheet Dashboard
@@ -256,7 +247,6 @@ export default function Dashboard() {
 				</p>
 			</div>
 
-			{/* Resizable Charts Layout */}
 			<ResizablePanelGroup
 				direction="horizontal"
 				className="w-full min-h-[800px] rounded-lg border dark:border-gray-700"
@@ -278,27 +268,23 @@ export default function Dashboard() {
 											cx="50%"
 											cy="50%"
 											outerRadius="80%"
-											label={({
-												name,
-												percent,
-											}) =>
+											// FIX: Removed unused 'value' from destructured props to resolve warning.
+											label={({ name, percent }) =>
 												`${name}: ${(
 													percent * 100
 												).toFixed(0)}%`
 											}
 											labelLine={false}
 										>
-											{data.status.map(
-												(entry, index) => (
-													<Cell
-														key={`cell-${index}`}
-														fill={getStatusColor(
-															entry.name,
-															index
-														)}
-													/>
-												)
-											)}
+											{data.status.map((entry, index) => (
+												<Cell
+													key={`cell-${index}`}
+													fill={getStatusColor(
+														entry.name,
+														index
+													)}
+												/>
+											))}
 										</Pie>
 										<Tooltip content={<CustomTooltip />} />
 										<Legend />
@@ -326,11 +312,15 @@ export default function Dashboard() {
 										<XAxis
 											dataKey="name"
 											tick={{ fill: "currentColor" }}
-											axisLine={{ stroke: "currentColor" }}
+											axisLine={{
+												stroke: "currentColor",
+											}}
 										/>
 										<YAxis
 											tick={{ fill: "currentColor" }}
-											axisLine={{ stroke: "currentColor" }}
+											axisLine={{
+												stroke: "currentColor",
+											}}
 										/>
 										<Tooltip content={<CustomTooltip />} />
 										<Bar
@@ -354,9 +344,7 @@ export default function Dashboard() {
 						</ResizablePanel>
 					</ResizablePanelGroup>
 				</ResizablePanel>
-
 				<ResizableHandle withHandle />
-
 				<ResizablePanel defaultSize={50}>
 					<ResizablePanelGroup direction="vertical">
 						<ResizablePanel defaultSize={50}>
@@ -458,7 +446,6 @@ export default function Dashboard() {
 									<span className="mr-2">📅</span>
 									Daily Activity Heatmap
 								</h2>
-
 								<div className="overflow-x-auto w-full flex justify-center">
 									<div className="grid grid-rows-7 grid-flow-col gap-1">
 										{generateHeatmapGrid().map(
@@ -482,7 +469,6 @@ export default function Dashboard() {
 										)}
 									</div>
 								</div>
-
 								<div className="flex items-center justify-center gap-x-2 mt-6 text-sm text-gray-600 dark:text-gray-400">
 									<span className="font-medium">Less</span>
 									<div className="flex items-center space-x-1">
@@ -504,8 +490,6 @@ export default function Dashboard() {
 					</ResizablePanelGroup>
 				</ResizablePanel>
 			</ResizablePanelGroup>
-
-			{/* Recent Activity */}
 			{data.heatmap && data.heatmap.length > 0 && (
 				<div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow">
 					<h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white flex items-center">

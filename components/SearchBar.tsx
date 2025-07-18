@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import Fuse from "fuse.js"
 import debounce from "lodash.debounce"
-// FIX: Import the 'Problem' type for type safety
-import type { Problem, Difficulty, Status } from "@prisma/client"
+// FIX: Removed 'Difficulty' and 'Status' from the import as they are not top-level exports.
+import type { Problem } from "@prisma/client"
 
-// FIX: Update props to use the specific 'Problem' type instead of 'any'
 interface SearchBarProps {
   problems: Problem[]
   onResults: (filtered: Problem[]) => void
@@ -31,7 +30,8 @@ const SORT_OPTIONS = [
   { value: 'difficulty', label: 'Difficulty' },
   { value: 'status', label: 'Status' },
   { value: 'platform', label: 'Platform' },
-  { value: 'updatedAt', label: 'Recently Updated' } // Use updatedAt for sorting
+  // FIX: Changed 'updatedAt' to 'lastReview' which exists on the Problem model.
+  { value: 'lastReview', label: 'Recently Reviewed' } 
 ]
 
 export default function SearchBar({ problems, onResults }: SearchBarProps) {
@@ -46,40 +46,28 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
     categories: []
   })
 
+  // FIX: Ensured 'uniquePlatforms' is strictly 'string[]' to satisfy SelectItem.
   const uniquePlatforms = useMemo(() => {
-    const platforms = Array.from(new Set(problems.map(p => p.platform))).filter(Boolean)
-    return ['All', ...platforms]
+    const platforms = [...new Set(problems.map(p => p.platform))].filter((p): p is string => !!p)
+    return ['All', ...platforms.sort()]
   }, [problems])
 
   const uniqueCategories = useMemo(() => {
-    const categories = Array.from(new Set(problems.flatMap(p => p.category || []))).filter(Boolean)
+    const categories = [...new Set(problems.flatMap(p => p.category || []))].filter(Boolean)
     return categories.sort()
   }, [problems])
 
   const fuse = useMemo(() => new Fuse(problems, {
-    keys: [
-      { name: 'name', weight: 0.3 },
-      { name: 'platform', weight: 0.2 },
-      { name: 'difficulty', weight: 0.1 },
-      { name: 'status', weight: 0.1 },
-      { name: 'category', weight: 0.1 },
-      { name: 'notes', weight: 0.05 },
-      { name: 'mistakesMade', weight: 0.05 }
-    ],
+    keys: ['name', 'platform', 'difficulty', 'status', 'category', 'notes', 'mistakesMade'],
     threshold: 0.3,
     includeScore: true
   }), [problems])
 
   useEffect(() => {
     const debouncedSearch = debounce(() => {
-      let filtered: Problem[]
+      let filtered: Problem[] = query.trim() ? fuse.search(query).map(r => r.item) : [...problems]
 
-      if (query.trim()) {
-        filtered = fuse.search(query).map(r => r.item)
-      } else {
-        filtered = [...problems]
-      }
-
+      // Apply filters
       if (filters.difficulty !== 'All') {
         filtered = filtered.filter(p => p.difficulty === filters.difficulty)
       }
@@ -95,36 +83,36 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
         )
       }
 
-      // FIX: Add 'Problem' type to sort arguments for type safety
-      filtered = filtered.sort((a: Problem, b: Problem) => {
-        let aVal, bVal
+      // Sort results
+      filtered.sort((a, b) => {
+        let aVal: any, bVal: any
         
         switch (sortBy) {
           case 'difficulty':
-            const diffOrder: Record<Difficulty, number> = { 'Easy': 1, 'Medium': 2, 'Hard': 3 }
+            // FIX: Use Problem['difficulty'] to derive the enum type correctly.
+            const diffOrder: Record<Problem['difficulty'], number> = { 'Easy': 1, 'Medium': 2, 'Hard': 3 }
             aVal = diffOrder[a.difficulty] || 0
             bVal = diffOrder[b.difficulty] || 0
             break
           case 'status':
-            const statusOrder: Record<Status, number> = { 'Pending': 1, 'Review': 2, 'Solved': 3 }
+            // FIX: Use Problem['status'] to derive the enum type correctly.
+            const statusOrder: Record<Problem['status'], number> = { 'Pending': 1, 'Review': 2, 'Solved': 3 }
             aVal = statusOrder[a.status] || 0
             bVal = statusOrder[b.status] || 0
             break
-          case 'updatedAt':
-            aVal = new Date(a.updatedAt).getTime()
-            bVal = new Date(b.updatedAt).getTime()
+          case 'lastReview':
+            // FIX: Sort by 'lastReview' and handle null dates.
+            aVal = a.lastReview ? new Date(a.lastReview).getTime() : 0
+            bVal = b.lastReview ? new Date(b.lastReview).getTime() : 0
             break
           default:
-            // Use 'keyof Problem' to safely access properties
             const key = sortBy as keyof Problem
             aVal = a[key]?.toString().toLowerCase() || ''
             bVal = b[key]?.toString().toLowerCase() || ''
         }
-
-        if (sortOrder === 'desc') {
-          return aVal > bVal ? -1 : aVal < bVal ? 1 : 0
-        }
-        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+        
+        const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+        return sortOrder === 'asc' ? comparison : -comparison
       })
 
       onResults(filtered)
@@ -145,12 +133,7 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
 
   const clearFilters = () => {
     setQuery("")
-    setFilters({
-      difficulty: 'All',
-      status: 'All',
-      platform: 'All',
-      categories: []
-    })
+    setFilters({ difficulty: 'All', status: 'All', platform: 'All', categories: [] })
     setSortBy('name')
     setSortOrder('asc')
   }
@@ -166,15 +149,15 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
       transition={{ duration: 0.3 }}
     >
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
         <Input
           placeholder="🔍 Search problems, notes, mistakes..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="pl-10 pr-20 text-sm border-slate-200 focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          className="pl-10 pr-20 text-sm border-slate-200 focus:ring-2 focus:ring-blue-500 transition-all"
         />
         
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           <AnimatePresence>
             {query && (
               <motion.button
@@ -182,7 +165,7 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={() => setQuery("")}
-                className="p-1 rounded-full hover:bg-slate-100 transition-colors"
+                className="p-1 rounded-full hover:bg-slate-100"
               >
                 <X className="w-3 h-3 text-slate-400" />
               </motion.button>
@@ -210,74 +193,52 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-slate-50 rounded-lg p-4 space-y-4"
+            className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-4"
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Sort by</label>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Sort by</label>
                 <div className="flex items-center gap-1">
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {SORT_OPTIONS.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    className="h-8 w-8 p-0"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')} className="h-8 w-8 p-0">
                     {sortOrder === 'asc' ? <SortAsc className="w-3 h-3" /> : <SortDesc className="w-3 h-3" />}
                   </Button>
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Difficulty</label>
-                <Select value={filters.difficulty} onValueChange={(v) => setFilters(prev => ({ ...prev, difficulty: v }))}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Difficulty</label>
+                <Select value={filters.difficulty} onValueChange={v => setFilters(p => ({ ...p, difficulty: v }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {DIFFICULTY_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
+                    {DIFFICULTY_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Status</label>
-                <Select value={filters.status} onValueChange={(v) => setFilters(prev => ({ ...prev, status: v }))}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Status</label>
+                <Select value={filters.status} onValueChange={v => setFilters(p => ({ ...p, status: v }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map(option => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
+                    {STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-1 block">Platform</label>
-                <Select value={filters.platform} onValueChange={(v) => setFilters(prev => ({ ...prev, platform: v }))}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Platform</label>
+                <Select value={filters.platform} onValueChange={v => setFilters(p => ({ ...p, platform: v }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {uniquePlatforms.map(platform => (
-                      <SelectItem key={platform} value={platform}>{platform}</SelectItem>
-                    ))}
+                    {uniquePlatforms.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -285,19 +246,11 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
 
             {uniqueCategories.length > 0 && (
               <div>
-                <label className="text-xs font-medium text-slate-600 mb-2 block">Categories</label>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2 block">Categories</label>
                 <div className="flex flex-wrap gap-2">
                   {uniqueCategories.map(category => (
-                    <motion.div
-                      key={category}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Badge
-                        variant={filters.categories.includes(category) ? "default" : "secondary"}
-                        className="cursor-pointer text-xs transition-colors"
-                        onClick={() => handleCategoryToggle(category)}
-                      >
+                    <motion.div key={category} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Badge variant={filters.categories.includes(category) ? "default" : "secondary"} className="cursor-pointer" onClick={() => handleCategoryToggle(category)}>
                         {category}
                       </Badge>
                     </motion.div>
@@ -306,17 +259,10 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
               </div>
             )}
 
-            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-              <span className="text-xs text-slate-500">
-                {problems.length} total problems
-              </span>
+            <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-xs text-slate-500 dark:text-slate-400">{problems.length} total problems</span>
               {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-xs h-7"
-                >
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7">
                   Clear all filters
                 </Button>
               )}
@@ -331,10 +277,9 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-center flex-wrap gap-2 text-xs text-slate-600"
+            className="flex items-center flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300"
           >
             <span className="font-medium">Active filters:</span>
-            {/* FIX: Replaced quotes with the correct HTML entity '"' */}
             {query && <Badge variant="outline">"{query}"</Badge>}
             {filters.difficulty !== 'All' && <Badge variant="outline">{filters.difficulty}</Badge>}
             {filters.status !== 'All' && <Badge variant="outline">{filters.status}</Badge>}
