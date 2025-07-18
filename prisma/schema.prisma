@@ -55,6 +55,18 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+enum Difficulty {
+  Easy
+  Medium
+  Hard
+}
+
+enum Status {
+  Pending
+  Solved
+  Review
+}
+
 model Problem {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
   userId         String

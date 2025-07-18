@@ -1,9 +1,7 @@
-'use client'
+"use client"
 
-import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { PrismaClient } from '@prisma/client'
-import { notFound } from 'next/navigation'
+import { useState, useCallback, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
@@ -83,22 +81,13 @@ function FormField({
   )
 }
 
-const prisma = new PrismaClient()
-
-export default async function EditPage({ params }: { params: { id: string } }) {
-  const problem = await prisma.problem.findUnique({ where: { id: params.id } })
-  if (!problem) return notFound()
-
-  return <EditProblemCard problem={problem} />
-}
-
 function EditProblemCard({ problem }: { problem: Problem }) {
   const router = useRouter()
   const [form, setForm] = useState({
-    problemId: problem.problemId,
-    name: problem.name,
-    platform: problem.platform,
-    link: problem.link,
+    problemId: problem.problemId || '',
+    name: problem.name || '',
+    platform: problem.platform || '',
+    link: problem.link || '',
     difficulty: problem.difficulty,
     status: problem.status,
     category: problem.category.join(', '),
@@ -150,7 +139,7 @@ function EditProblemCard({ problem }: { problem: Problem }) {
 
     try {
       const response = await fetch(`/api/problem/${problem.id}`, {
-        method: 'PUT',
+        method: 'PATCH', // Changed from PUT to PATCH to match your API route
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
@@ -183,10 +172,10 @@ function EditProblemCard({ problem }: { problem: Problem }) {
   // Reset form to original values
   const handleReset = useCallback(() => {
     setForm({
-      problemId: problem.problemId,
-      name: problem.name,
-      platform: problem.platform,
-      link: problem.link,
+      problemId: problem.problemId || '',
+      name: problem.name || '',
+      platform: problem.platform || '',
+      link: problem.link || '',
       difficulty: problem.difficulty,
       status: problem.status,
       category: problem.category.join(', '),
@@ -363,4 +352,37 @@ function EditProblemCard({ problem }: { problem: Problem }) {
       </form>
     </motion.div>
   )
+}
+
+// FIX: Since this is a client component, we need to use useParams() instead of params prop
+export default function EditPage() {
+  const params = useParams()
+  const id = params.id as string
+  const [problem, setProblem] = useState<Problem | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchProblem() {
+      try {
+        const response = await fetch(`/api/problem/${id}`)
+        const result = await response.json()
+        if (result.success && result.problem) {
+          setProblem(result.problem)
+        } else {
+          setError('Problem not found')
+        }
+      } catch (err) {
+        setError('Failed to load problem')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProblem()
+  }, [id])
+
+  if (loading) return <div className="text-center mt-10">Loading...</div>
+  if (error || !problem) return <div className="text-center mt-10 text-red-500">{error || 'Problem not found'}</div>
+
+  return <EditProblemCard problem={problem} />
 }

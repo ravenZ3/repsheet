@@ -34,18 +34,20 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import debounce from "lodash.debounce"
-// FIX: Removed unused 'isEqual' import
-// import isEqual from "lodash/isEqual"
 import { useRouter } from "next/navigation"
-import type { Problem, Difficulty, Status } from "@prisma/client"
+import { Difficulty, Status, type Problem } from "@prisma/client"
 
-// Constants remain the same...
-const DIFFICULTY_OPTIONS: Difficulty[] = ["Easy", "Medium", "Hard"]
-const STATUS_OPTIONS: Status[] = ["Pending", "Solved", "Review"]
+// Constants
+const DIFFICULTY_OPTIONS: Difficulty[] = [
+	Difficulty.Easy,
+	Difficulty.Medium,
+	Difficulty.Hard,
+]
+const STATUS_OPTIONS: Status[] = [Status.Pending, Status.Solved, Status.Review]
 const MAX_INPUT_LENGTH = 1000
 const DEBOUNCE_DELAY = 1000
 
-// Type definitions remain the same...
+// Type definitions
 interface ProblemRowProps {
 	problem: Problem | null
 	onUpdate?: (id: string, updates: Partial<Problem> | null) => void
@@ -76,7 +78,7 @@ interface FormFieldProps {
 	onBlur?: () => void
 }
 
-// Reusable FormField component remains the same...
+// Reusable FormField component
 function FormField({
 	label,
 	value,
@@ -128,7 +130,6 @@ function FormField({
  * ProblemRow component for displaying, editing, and deleting a problem's details
  */
 export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
-	// FIX: All hooks are now at the top level of the component, before any returns.
 	const router = useRouter()
 	const [open, setOpen] = useState(false)
 	const [settingsOpen, setSettingsOpen] = useState(false)
@@ -139,8 +140,12 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 	const [settingsForm, setSettingsForm] = useState<SettingsForm>({
 		name: problem?.name || "",
 		platform: problem?.platform || "",
-		difficulty: problem?.difficulty || "Easy",
-		status: problem?.status || "Pending",
+		difficulty:
+			Difficulty[problem?.difficulty as keyof typeof Difficulty] ??
+			Difficulty.Easy,
+		status:
+			Status[problem?.status as keyof typeof Status] ?? Status.Pending,
+
 		category: problem?.category?.join(", ") || "",
 	})
 	const [saving, setSaving] = useState(false)
@@ -152,17 +157,17 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 	// Memoized styles
 	const statusStyle = useMemo(() => {
 		switch (problem?.status) {
-			case "Solved":
+			case Status.Solved:
 				return {
 					color: "text-emerald-600 dark:text-emerald-400",
 					bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700",
 				}
-			case "Review":
+			case Status.Review:
 				return {
 					color: "text-amber-600 dark:text-amber-400",
 					bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700",
 				}
-			case "Pending":
+			case Status.Pending:
 			default:
 				return {
 					color: "text-gray-600 dark:text-gray-400",
@@ -173,17 +178,17 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 
 	const difficultyStyle = useMemo(() => {
 		switch (problem?.difficulty) {
-			case "Easy":
+			case Difficulty.Easy:
 				return {
 					color: "text-green-600 dark:text-green-400",
 					bg: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700",
 				}
-			case "Medium":
+			case Difficulty.Medium:
 				return {
 					color: "text-yellow-600 dark:text-yellow-400",
 					bg: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700",
 				}
-			case "Hard":
+			case Difficulty.Hard:
 				return {
 					color: "text-red-600 dark:text-red-400",
 					bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
@@ -211,7 +216,9 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 					})
 
 					if (!response.ok) {
-						throw new Error(`Failed to save: ${response.statusText}`)
+						throw new Error(
+							`Failed to save: ${response.statusText}`
+						)
 					}
 
 					const updatedProblem: Problem = await response.json()
@@ -219,7 +226,10 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 					onUpdate?.(problem.id, updatedProblem)
 					toast.success("Changes saved successfully")
 				} catch (err) {
-					const errorMessage = err instanceof Error ? err.message : "Failed to save changes"
+					const errorMessage =
+						err instanceof Error
+							? err.message
+							: "Failed to save changes"
 					setError(errorMessage)
 					toast.error(errorMessage)
 				} finally {
@@ -231,14 +241,20 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 
 	const savePendingChanges = useCallback(() => {
 		if (!problem) return
-		if (problem.notes !== editableForm.notes || problem.mistakesMade !== editableForm.mistakesMade) {
+		if (
+			problem.notes !== editableForm.notes ||
+			problem.mistakesMade !== editableForm.mistakesMade
+		) {
 			saveChanges.cancel()
 			saveChanges(editableForm)
 		}
 	}, [editableForm, problem, saveChanges])
 
 	const handleDelete = useCallback(async () => {
-		if (!problem || !confirm(`Are you sure you want to delete "${problem.name}"?`)) {
+		if (
+			!problem ||
+			!confirm(`Are you sure you want to delete "${problem.name}"?`)
+		) {
 			return
 		}
 
@@ -246,7 +262,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		setError(null)
 
 		try {
-			const response = await fetch(`/review/delete`, {
+			const response = await fetch(`/api/review/delete`, {
 				method: "DELETE",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ id: problem.id }),
@@ -258,14 +274,14 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 			toast.success("Problem deleted successfully")
 			router.refresh()
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "Failed to delete problem"
+			const errorMessage =
+				err instanceof Error ? err.message : "Failed to delete problem"
 			setError(errorMessage)
 			toast.error(errorMessage)
 		} finally {
 			setDeleting(false)
 			setSettingsOpen(false)
 		}
-		// FIX: Removed 'onUpdate' from dependency array as it wasn't being used.
 	}, [problem, router])
 
 	const handleEditableChange = useCallback(
@@ -289,7 +305,10 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 
 	useEffect(() => {
 		if (!problem) return
-		if (problem.notes !== editableForm.notes || problem.mistakesMade !== editableForm.mistakesMade) {
+		if (
+			problem.notes !== editableForm.notes ||
+			problem.mistakesMade !== editableForm.mistakesMade
+		) {
 			saveChanges(editableForm)
 		}
 	}, [editableForm, saveChanges, problem])
@@ -299,13 +318,19 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 			setError("Problem name is required")
 			return
 		}
-		const categories = settingsForm.category.split(",").map((t) => t.trim()).filter(Boolean)
+		const categories = settingsForm.category
+			.split(",")
+			.map((t) => t.trim())
+			.filter(Boolean)
 		if (categories.length === 0) {
 			setError("At least one category is required")
 			return
 		}
 		setSettingsSaving(true)
-		const updates: Partial<Problem> = { ...settingsForm, category: categories }
+		const updates: Partial<Problem> = {
+			...settingsForm,
+			category: categories,
+		}
 		saveChanges.cancel()
 		await saveChanges(updates)
 		setSettingsSaving(false)
@@ -317,8 +342,13 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		setSettingsForm({
 			name: problem.name || "",
 			platform: problem.platform || "",
-			difficulty: problem.difficulty,
-			status: problem.status,
+			difficulty:
+				Difficulty[problem?.difficulty as keyof typeof Difficulty] ??
+				Difficulty.Easy,
+			status:
+				Status[problem?.status as keyof typeof Status] ??
+				Status.Pending,
+
 			category: problem.category?.join(", ") || "",
 		})
 		setError(null)
@@ -334,12 +364,10 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		return date.toLocaleTimeString()
 	}, [])
 
-	// The early return is now AFTER all the hooks have been called.
 	if (!problem) {
 		return null
 	}
-	
-	// JSX for rendering remains the same...
+
 	return (
 		<motion.div
 			layout

@@ -268,11 +268,14 @@ export default function Dashboard() {
 											cx="50%"
 											cy="50%"
 											outerRadius="80%"
-											// FIX: Removed unused 'value' from destructured props to resolve warning.
 											label={({ name, percent }) =>
-												`${name}: ${(
-													percent * 100
-												).toFixed(0)}%`
+												`${name}: ${
+													percent
+														? (
+																percent * 100
+														  ).toFixed(0)
+														: 0
+												}%`
 											}
 											labelLine={false}
 										>
@@ -515,7 +518,9 @@ export default function Dashboard() {
 										<div>
 											<p className="font-medium text-gray-900 dark:text-white">
 												{activity.count} problem
-												{activity.count > 1 ? "s" : ""}{" "}
+												{activity.count > 1
+													? "s"
+													: ""}{" "}
 												solved
 											</p>
 											<p className="text-sm text-gray-500 dark:text-gray-400">
