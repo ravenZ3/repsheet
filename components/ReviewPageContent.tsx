@@ -49,7 +49,7 @@ export default function ReviewPageContent({
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6">
+    <div className="container mx-auto p-4 md:p-6 max-w-4xl">
 			<Card className="bg-white/40 dark:bg-white/10 border-gray-300 dark:border-gray-700 backdrop-blur-lg mb-8">
 				<CardHeader>
 					<CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
