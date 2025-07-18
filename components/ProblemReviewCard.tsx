@@ -1,3 +1,4 @@
+//app/components/ProblemReviewCard.tsx
 "use client"
 
 import { useState, useCallback, useMemo } from "react"
@@ -13,6 +14,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select"
 import type { Problem } from "@prisma/client"
+// Import the enums from the Prisma client to use their values
+import { Status, Difficulty } from "@prisma/client"
 
 interface ProblemReviewCardProps {
 	problem: Problem
@@ -27,20 +30,26 @@ export default function ProblemReviewCard({
 	const [submitting, setSubmitting] = useState(false)
 	const [isVisible, setIsVisible] = useState(true)
 
-	// --- Style Hooks (as requested) ---
+	// --- Style Hooks (Corrected with Enums) ---
 	const statusStyle = useMemo(() => {
+		// Use the imported `Status` enum for type-safe comparison
 		switch (problem.status) {
-			case "Solved":
+			case Status.Solved:
 				return {
 					color: "text-emerald-600 dark:text-emerald-400",
 					bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700",
 				}
-			case "Review":
+			case Status.ToRevise: // Use the correct enum member
 				return {
 					color: "text-amber-600 dark:text-amber-400",
 					bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700",
 				}
-			case "Pending":
+			case Status.Stuck:
+				return {
+					color: "text-red-600 dark:text-red-400",
+					bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
+				}
+			case Status.Revisited: // Use the correct enum member
 			default:
 				return {
 					color: "text-gray-600 dark:text-gray-400",
@@ -50,18 +59,19 @@ export default function ProblemReviewCard({
 	}, [problem.status])
 
 	const difficultyStyle = useMemo(() => {
+		// Use the imported `Difficulty` enum for type-safe comparison
 		switch (problem.difficulty) {
-			case "Easy":
+			case Difficulty.Easy:
 				return {
 					color: "text-green-600 dark:text-green-400",
 					bg: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700",
 				}
-			case "Medium":
+			case Difficulty.Medium:
 				return {
 					color: "text-yellow-600 dark:text-yellow-400",
 					bg: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700",
 				}
-			case "Hard":
+			case Difficulty.Hard:
 				return {
 					color: "text-red-600 dark:text-red-400",
 					bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",

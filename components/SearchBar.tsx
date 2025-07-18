@@ -1,4 +1,5 @@
 "use client"
+
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useMemo } from "react"
@@ -14,8 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import Fuse from "fuse.js"
 import debounce from "lodash.debounce"
-// FIX: Removed 'Difficulty' and 'Status' from the import as they are not top-level exports.
-import type { Problem } from "@prisma/client"
+// Import the enums from the Prisma client to use their actual values
+import { Difficulty, Status, type Problem } from "@prisma/client"
 
 interface SearchBarProps {
 	problems: Problem[]
@@ -29,14 +30,15 @@ interface FilterState {
 	categories: string[]
 }
 
-const DIFFICULTY_OPTIONS = ["All", "Easy", "Medium", "Hard"]
-const STATUS_OPTIONS = ["All", "Pending", "Solved", "Review"]
+// Define options programmatically from the enums to ensure they are always in sync
+const DIFFICULTY_OPTIONS = ["All", ...Object.values(Difficulty)]
+const STATUS_OPTIONS = ["All", ...Object.values(Status)]
+
 const SORT_OPTIONS = [
 	{ value: "name", label: "Name" },
 	{ value: "difficulty", label: "Difficulty" },
 	{ value: "status", label: "Status" },
 	{ value: "platform", label: "Platform" },
-	// FIX: Changed 'updatedAt' to 'lastReview' which exists on the Problem model.
 	{ value: "lastReview", label: "Recently Reviewed" },
 ]
 
@@ -52,7 +54,6 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
 		categories: [],
 	})
 
-	// FIX: Ensured 'uniquePlatforms' is strictly 'string[]' to satisfy SelectItem.
 	const uniquePlatforms = useMemo(() => {
 		const platforms = [...new Set(problems.map((p) => p.platform))].filter(
 			(p): p is string => !!p
@@ -113,28 +114,31 @@ export default function SearchBar({ problems, onResults }: SearchBarProps) {
 
 			// Sort results
 			filtered.sort((a, b) => {
-				let aVal: string | number | undefined, bVal: string | number | undefined
+				let aVal: string | number, bVal: string | number
 
 				switch (sortBy) {
 					case "difficulty":
-						// FIX: Use Problem['difficulty'] to derive the enum type correctly.
-						const diffOrder: Record<Problem["difficulty"], number> =
-							{ Easy: 1, Medium: 2, Hard: 3 }
-						aVal = diffOrder[a.difficulty] || 0
-						bVal = diffOrder[b.difficulty] || 0
+						// Use the Difficulty enum for a type-safe sorting map
+						const diffOrder: Record<Difficulty, number> = {
+							[Difficulty.Easy]: 1,
+							[Difficulty.Medium]: 2,
+							[Difficulty.Hard]: 3,
+						}
+						aVal = diffOrder[a.difficulty]
+						bVal = diffOrder[b.difficulty]
 						break
 					case "status":
-						// FIX: Use Problem['status'] to derive the enum type correctly.
-						const statusOrder: Record<Problem["status"], number> = {
-							Pending: 1,
-							Review: 2,
-							Solved: 3,
+						// Use the Status enum for a type-safe sorting map
+						const statusOrder: Record<Status, number> = {
+							[Status.ToRevise]: 1,
+							[Status.Revisited]: 2,
+							[Status.Stuck]: 3,
+							[Status.Solved]: 4,
 						}
-						aVal = statusOrder[a.status] || 0
-						bVal = statusOrder[b.status] || 0
+						aVal = statusOrder[a.status]
+						bVal = statusOrder[b.status]
 						break
 					case "lastReview":
-						// FIX: Sort by 'lastReview' and handle null dates.
 						aVal = a.lastReview
 							? new Date(a.lastReview).getTime()
 							: 0

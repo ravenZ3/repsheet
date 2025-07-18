@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient, Prisma, Difficulty, Status } from "@prisma/client"; // Import Enums
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
@@ -9,10 +9,20 @@ interface ProblemPostBody {
   name: string;
   platform: string;
   link: string;
-  difficulty: string;
-  status: string;
+  difficulty: string; // Stays as string for incoming body
+  status: string;     // Stays as string for incoming body
   category: string | string[];
   dateSolved?: string;
+}
+
+// Helper to validate that a string is a valid Difficulty
+function isValidDifficulty(value: string): value is Difficulty {
+  return Object.values(Difficulty).includes(value as Difficulty);
+}
+
+// Helper to validate that a string is a valid Status
+function isValidStatus(value: string): value is Status {
+  return Object.values(Status).includes(value as Status);
 }
 
 export async function POST(req: NextRequest) {
@@ -45,6 +55,23 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // --- VALIDATION LOGIC ---
+    if (!isValidDifficulty(body.difficulty)) {
+        return NextResponse.json(
+            { success: false, message: `Invalid difficulty. Must be one of: ${Object.values(Difficulty).join(", ")}` },
+            { status: 400 }
+        );
+    }
+
+    if (!isValidStatus(body.status)) {
+        return NextResponse.json(
+            { success: false, message: `Invalid status. Must be one of: ${Object.values(Status).join(", ")}` },
+            { status: 400 }
+        );
+    }
+    // --- END VALIDATION ---
+
 
     const categories = Array.isArray(body.category)
       ? body.category.map((tag) => tag.trim()).filter(Boolean)
@@ -73,8 +100,8 @@ export async function POST(req: NextRequest) {
         name: body.name,
         platform: body.platform,
         link: body.link,
-        difficulty: body.difficulty,
-        status: body.status,
+        difficulty: body.difficulty, // Now this is safe
+        status: body.status,         // And this is safe
         category: categories,
         dateSolved: dateSolved,
         nextReviewDate: dateSolved,

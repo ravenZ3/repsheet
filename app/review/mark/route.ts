@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+// Import the Status enum from the prisma client
+import { PrismaClient, Status } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 import { FSRS, Card, Rating } from 'fsrs.js';
 
@@ -53,7 +54,10 @@ export async function POST(req: NextRequest) {
         lastReview: now,
         reviewCount: { increment: 1 },
         nextReviewDate: updatedCard.card.due,
-        status: ratingEnum >= Rating.Good ? 'Solved' : 'Review',
+        // --- FIX: Use the imported Status enum instead of strings ---
+        // 'Solved' becomes Status.Solved
+        // The incorrect 'Review' becomes Status.ToRevise
+        status: ratingEnum >= Rating.Good ? Status.Solved : Status.ToRevise,
       },
     });
 

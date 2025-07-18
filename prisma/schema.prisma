@@ -62,9 +62,10 @@ enum Difficulty {
 }
 
 enum Status {
-  Pending
   Solved
-  Review
+  ToRevise    
+  Stuck
+  Revisited
 }
 
 model Problem {

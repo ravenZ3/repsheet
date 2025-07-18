@@ -27,7 +27,7 @@ import type { Problem } from "@prisma/client"
 
 // Constants
 const DIFFICULTY_OPTIONS = ["Easy", "Medium", "Hard"] as const
-const STATUS_OPTIONS = ["To Revise", "Stuck", "Solved", "Revisited"] as const
+const STATUS_OPTIONS = ["ToRevise", "Stuck", "Solved", "Revisited"] as const
 const MAX_LINK_LENGTH = 200
 const MAX_ID_LENGTH = 50
 const DEBOUNCE_DELAY = 1000
@@ -137,7 +137,7 @@ export default function AddProblemPage() {
     platform: "",
     link: "",
     difficulty: "Easy",
-    status: "To Revise",
+    status: "ToRevise",
     category: "",
     dateSolved: format(new Date(), "yyyy-MM-dd"),
   })
@@ -278,7 +278,7 @@ export default function AddProblemPage() {
       platform: "",
       link: "",
       difficulty: "Easy",
-      status: "To Revise",
+      status: "ToRevise",
       category: "",
       dateSolved: format(new Date(), "yyyy-MM-dd"),
     })
@@ -466,7 +466,7 @@ export default function AddProblemPage() {
             <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
               {STATUS_OPTIONS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s}
+                  {s === "ToRevise" ? "To Revise" : s}
                 </SelectItem>
               ))}
             </SelectContent>
