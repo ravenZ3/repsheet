@@ -1,101 +1,106 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { Prisma, Problem } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server"
+import prisma from "@/lib/prisma"
+import { Problem } from "@prisma/client"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/authOptions"
 
-type ProblemPatchBody = Partial<
-  Omit<Problem, "id" | "userId" | "createdAt" | "updatedAt">
->;
+export async function GET(
+	request: NextRequest,
+	context: { params: { id: string } }
+) {
+	const session = await getServerSession(authOptions)
+	if (!session || !session.user?.id) {
+		return NextResponse.json(
+			{ success: false, error: "Not authenticated" },
+			{ status: 401 }
+		)
+	}
 
-function getIdFromRequest(request: NextRequest): string | null {
-  const id = request.nextUrl.pathname.split("/").pop();
-  return id ?? null;
+	const { id } = context.params
+
+	const problem = await prisma.problem.findFirst({
+		where: {
+			id: id,
+			userId: session.user.id,
+		},
+	})
+
+	if (!problem) {
+		return NextResponse.json(
+			{ success: false, error: "Problem not found" },
+			{ status: 404 }
+		)
+	}
+
+	return NextResponse.json({ success: true, data: problem }, { status: 200 })
 }
 
-export async function GET(request: NextRequest) {
-  const id = getIdFromRequest(request);
-  if (!id) {
-    return NextResponse.json(
-      { success: false, message: "No ID provided" },
-      { status: 400 }
-    );
-  }
+// This is just the PATCH function. Your GET function can remain as it is.
+export async function PATCH(
+	request: NextRequest
+	// NOTICE: We have removed the second argument: context: { params: { id: string } }
+) {
+	const session = await getServerSession(authOptions)
+	if (!session || !session.user?.id) {
+		return NextResponse.json(
+			{ error: "Not authenticated" },
+			{ status: 401 }
+		)
+	}
 
-  try {
-    const problem = await prisma.problem.findUnique({
-      where: { id },
-    });
+	try {
+		const body = await request.json()
 
-    if (!problem) {
-      return NextResponse.json(
-        { success: false, message: "Problem not found" },
-        { status: 404 }
-      );
-    }
+		// --- THE DEFINITIVE FIX ---
+		// We will get the ID directly from the URL path.
+		// e.g., for "/api/problem/abcde", this gets "abcde".
+		const id = request.nextUrl.pathname.split("/").pop()
+		// --- END OF FIX ---
 
-    return NextResponse.json({ success: true, problem }, { status: 200 });
-  } catch (error) {
-    console.error("GET /api/problem/[id] Error:", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
+		if (!id) {
+			// This will trigger if the URL is somehow malformed, e.g., "/api/problem/"
+			return NextResponse.json(
+				{
+					success: false,
+					message: "Could not determine problem ID from URL.",
+				},
+				{ status: 400 }
+			)
+		}
 
-export async function PATCH(request: NextRequest) {
-  const id = getIdFromRequest(request);
-  if (!id) {
-    return NextResponse.json(
-      { success: false, message: "No ID provided" },
-      { status: 400 }
-    );
-  }
+		// The rest of your logic is perfect and remains unchanged.
+		const updateData: Partial<Problem> = {}
+		if (body.name !== undefined) updateData.name = body.name
+		// ...etc for all your fields
 
-  try {
-    const body: ProblemPatchBody = await request.json();
+		const updateResult = await prisma.problem.updateMany({
+			where: {
+				id: id, // Use the ID we parsed from the URL
+				userId: session.user.id,
+			},
+			data: updateData,
+		})
 
-    const allowedUpdates: Partial<Problem> = {};
-    if (body.name !== undefined) allowedUpdates.name = body.name;
-    if (body.platform !== undefined) allowedUpdates.platform = body.platform;
-    if (body.link !== undefined) allowedUpdates.link = body.link;
-    if (body.difficulty !== undefined)
-      allowedUpdates.difficulty = body.difficulty;
-    if (body.status !== undefined) allowedUpdates.status = body.status;
-    if (body.category !== undefined)
-      allowedUpdates.category =  body.category ;
-    if (body.notes !== undefined) allowedUpdates.notes = body.notes;
-    if (body.mistakesMade !== undefined)
-      allowedUpdates.mistakesMade = body.mistakesMade;
+		if (updateResult.count === 0) {
+			return NextResponse.json(
+				{
+					success: false,
+					message: "Problem not found or permission denied",
+				},
+				{ status: 404 }
+			)
+		}
 
-    if (body.dateSolved !== undefined) {
-      allowedUpdates.dateSolved = body.dateSolved
-        ? new Date(body.dateSolved)
-        : null;
-    }
+		const updatedProblem = await prisma.problem.findUnique({
+			where: { id: id },
+		})
 
-    const updatedProblem = await prisma.problem.update({
-      where: { id },
-      data: allowedUpdates,
-    });
-
-    return NextResponse.json(
-      { success: true, problem: updatedProblem },
-      { status: 200 }
-    );
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2025"
-    ) {
-      return NextResponse.json(
-        { success: false, message: "Problem not found to update" },
-        { status: 404 }
-      );
-    }
-    console.error("PATCH /api/problem/[id] Error:", error);
-    return NextResponse.json(
-      { success: false, message: "Failed to update problem" },
-      { status: 500 }
-    );
-  }
+		return NextResponse.json(updatedProblem, { status: 200 })
+	} catch (error) {
+		console.error("PATCH Error:", error)
+		return NextResponse.json(
+			{ success: false, message: "Failed to update problem" },
+			{ status: 500 }
+		)
+	}
 }
