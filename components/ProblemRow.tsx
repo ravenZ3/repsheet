@@ -50,7 +50,7 @@ const STATUS_OPTIONS: Status[] = [
 	Status.Revisited,
 ]
 const MAX_INPUT_LENGTH = 2000
-const DEBOUNCE_DELAY = 5000 // Increased to 5 seconds for a better UX
+const DEBOUNCE_DELAY = 2000 // Increased to 5 seconds for a better UX
 
 // --- Type Definitions ---
 interface ProblemRowProps {
