@@ -56,7 +56,7 @@ export default function ReviewPageContent({
 						📊 Progress Today
 					</CardTitle>
 				</CardHeader>
-				<CardContent className="text-gray-800 dark:text-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+				<CardContent className="text-gray-800 dark:text-gray-100 grid grid-cols-3 sm:grid-cols-3 gap-4 mb-4">
 					<div className="text-center">
 						<p className="text-2xl font-bold">{problems.length}</p>
 						<p className="text-sm text-gray-600 dark:text-gray-400">
