@@ -73,8 +73,9 @@ export async function PATCH(
     if (body.platform !== undefined) updateData.platform = body.platform;
     if (body.notes !== undefined) updateData.notes = body.notes;
     if (body.mistakesMade !== undefined) updateData.mistakesMade = body.mistakesMade;
-    // ... etc, for all updatable fields
-
+    if (body.difficulty !== undefined) updateData.difficulty = body.difficulty;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.category !== undefined) updateData.category = body.category;
     const updateResult = await prisma.problem.updateMany({
       where: {
         id: id,

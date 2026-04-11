@@ -7,7 +7,7 @@ import ProblemsClient from "./ProblemsClient"
 export default async function ProblemsPage({
 	searchParams,
 }: {
-	searchParams: { page?: string }
+	searchParams: Promise<{ page?: string }>
 }) {
 	const session = await getServerSession(authOptions)
 	if (!session?.user?.id) {
@@ -15,7 +15,8 @@ export default async function ProblemsPage({
 	}
 
 	// 1. Pagination Params
-	const page = parseInt(searchParams.page || "1", 10)
+	const resolvedParams = await searchParams
+	const page = parseInt(resolvedParams.page || "1", 10)
 	const pageSize = 15
 
 	// 2. Fetch Paginated Problems (Phase 1 Default View)

@@ -165,13 +165,13 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 			transition={{ duration: 0.3 }}
 		>
 			<div className="relative">
-				<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+				<Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
 				<Input
-					placeholder={disabled ? "Warming up search index..." : "🔍 Search problems, notes, mistakes..."}
+					placeholder={disabled ? "Warming up search index..." : "Search problems, notes, mistakes..."}
 					value={query}
 					onChange={(e) => setQuery(e.target.value)}
 					disabled={disabled}
-					className="pl-10 pr-20 text-sm border-slate-200 focus:ring-2 focus:ring-blue-500 transition-all disabled:bg-slate-50 disabled:cursor-not-allowed"
+					className="pl-10 pr-20 text-sm border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
 				/>
 
 				<div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -183,15 +183,15 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 								exit={{ opacity: 0, scale: 0.8 }}
 								onClick={() => setQuery("")}
 								disabled={disabled}
-								className="p-1 rounded-full hover:bg-slate-100"
+								className="p-1 rounded-full hover:bg-gray-100"
 							>
-								<X className="w-3 h-3 text-slate-400" />
+								<X className="w-3 h-3 text-gray-400" />
 							</motion.button>
 						)}
 					</AnimatePresence>
 
 					{disabled ? (
-						<Loader2 className="w-4 h-4 text-slate-400 animate-spin mr-1" />
+						<Loader2 className="w-4 h-4 text-gray-400 animate-spin mr-1" />
 					) : (
 						<motion.button
 							whileHover={{ scale: 1.05 }}
@@ -200,7 +200,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 							className={`p-1 rounded-full transition-colors ${
 								showFilters || hasActiveFilters
 									? "bg-blue-100 text-blue-600"
-									: "hover:bg-slate-100 text-slate-400"
+									: "hover:bg-gray-100 text-gray-400"
 							}`}
 						>
 							<Filter className="w-3 h-3" />
@@ -215,11 +215,11 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 						initial={{ opacity: 0, height: 0 }}
 						animate={{ opacity: 1, height: "auto" }}
 						exit={{ opacity: 0, height: 0 }}
-						className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 space-y-4 overflow-hidden"
+						className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-4 overflow-hidden"
 					>
 						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							<div>
-								<label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Sort by</label>
+								<label className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 block">Sort by</label>
 								<div className="flex items-center gap-1">
 									<Select value={sortBy} onValueChange={setSortBy}>
 										<SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -240,7 +240,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 								</div>
 							</div>
 							<div>
-								<label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Difficulty</label>
+								<label className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 block">Difficulty</label>
 								<Select value={filters.difficulty} onValueChange={(v) => setFilters((p) => ({ ...p, difficulty: v }))}>
 									<SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
 									<SelectContent>
@@ -249,7 +249,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 								</Select>
 							</div>
 							<div>
-								<label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Status</label>
+								<label className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 block">Status</label>
 								<Select value={filters.status} onValueChange={(v) => setFilters((p) => ({ ...p, status: v }))}>
 									<SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
 									<SelectContent>
@@ -258,7 +258,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 								</Select>
 							</div>
 							<div>
-								<label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1 block">Platform</label>
+								<label className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 block">Platform</label>
 								<Select value={filters.platform} onValueChange={(v) => setFilters((p) => ({ ...p, platform: v }))}>
 									<SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
 									<SelectContent>
@@ -269,7 +269,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 						</div>
 						{uniqueCategories.length > 0 && (
 							<div>
-								<label className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2 block">Categories</label>
+								<label className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2 block">Categories</label>
 								<div className="flex flex-wrap gap-2">
 									{uniqueCategories.map((category) => (
 										<motion.div key={category} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -285,8 +285,8 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 								</div>
 							</div>
 						)}
-						<div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
-							<span className="text-xs text-slate-500 dark:text-slate-400">{problems.length} total searchable items</span>
+						<div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+							<span className="text-xs text-gray-500 dark:text-gray-400">{problems.length} total searchable items</span>
 							{hasActiveFilters && (
 								<Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-7">Clear all filters</Button>
 							)}
@@ -300,7 +300,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 						initial={{ opacity: 0, y: -10 }}
 						animate={{ opacity: 1, y: 0 }}
 						exit={{ opacity: 0, y: -10 }}
-						className="flex items-center flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300"
+						className="flex items-center flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300"
 					>
 						<span className="font-medium">Active filters:</span>
 						{query && <Badge variant="outline">&quot;{query}&quot;</Badge>}

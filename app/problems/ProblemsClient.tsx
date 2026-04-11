@@ -108,7 +108,7 @@ export default function ProblemsClient({
 					<motion.div
 						initial={{ opacity: 0 }}
 						animate={{ opacity: 1 }}
-						className="text-center py-12 text-slate-500"
+						className="text-center py-12 text-gray-500"
 					>
 						<p>No problems found matching your criteria.</p>
 					</motion.div>
@@ -117,8 +117,8 @@ export default function ProblemsClient({
 
 			{/* Pagination Controls only render when user is not actively searching */}
 			{!isSearchActive && totalPages > 1 && (
-				<div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-4 border-t border-slate-200 dark:border-slate-800">
-					<p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+				<div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-800">
+					<p className="text-sm font-medium text-gray-600 dark:text-gray-400">
 						Showing {displayProblems.length} of {totalProblems}{" "}
 						problems
 					</p>

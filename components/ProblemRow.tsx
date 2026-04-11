@@ -269,7 +269,8 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 
 		setSettingsSaving(false)
 		setSettingsOpen(false)
-	}, [settingsForm, saveChanges])
+		router.refresh()
+	}, [settingsForm, saveChanges, router])
 
 	const handleSettingsReset = useCallback(() => {
 		setSettingsForm({
