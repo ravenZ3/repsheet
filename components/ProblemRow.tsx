@@ -35,7 +35,7 @@ import {
 import { toast } from "sonner"
 import debounce from "lodash.debounce"
 import { useRouter } from "next/navigation"
-import { Difficulty, Status, type Problem } from "@prisma/client"
+import { Difficulty, type Problem } from "@prisma/client"
 
 // --- Constants for Configuration ---
 const DIFFICULTY_OPTIONS: Difficulty[] = [
@@ -43,12 +43,7 @@ const DIFFICULTY_OPTIONS: Difficulty[] = [
 	Difficulty.Medium,
 	Difficulty.Hard,
 ]
-const STATUS_OPTIONS: Status[] = [
-	Status.ToRevise,
-	Status.Solved,
-	Status.Stuck,
-	Status.Revisited,
-]
+
 const MAX_INPUT_LENGTH = 2000
 const DEBOUNCE_DELAY = 2000 // Increased to 5 seconds for a better UX
 
@@ -67,7 +62,7 @@ interface SettingsForm {
 	name: string
 	platform: string
 	difficulty: Difficulty
-	status: Status
+	isStuck: boolean
 	category: string
 }
 
@@ -87,7 +82,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		name: problem.name,
 		platform: problem.platform || "",
 		difficulty: problem.difficulty,
-		status: problem.status,
+		isStuck: problem.isStuck,
 		category: problem.category.join(", "),
 	})
 	const [saving, setSaving] = useState(false)
@@ -97,30 +92,6 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 	const [deleting, setDeleting] = useState(false)
 
 	// --- Memoized Styles for Performance ---
-	const statusStyle = useMemo(() => {
-		switch (problem.status) {
-			case Status.Solved:
-				return {
-					color: "text-emerald-600 dark:text-emerald-400",
-					bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700",
-				}
-			case Status.ToRevise:
-				return {
-					color: "text-amber-600 dark:text-amber-400",
-					bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700",
-				}
-			case Status.Stuck:
-				return {
-					color: "text-red-600 dark:text-red-400",
-					bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
-				}
-			default:
-				return {
-					color: "text-gray-600 dark:text-gray-400",
-					bg: "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700",
-				}
-		}
-	}, [problem.status])
 
 	const difficultyStyle = useMemo(() => {
 		switch (problem.difficulty) {
@@ -236,7 +207,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 	)
 
 	const handleSettingsChange = useCallback(
-		(key: keyof SettingsForm, value: string | Difficulty | Status) => {
+		(key: keyof SettingsForm, value: string | Difficulty | boolean) => {
 			setSettingsForm((prev) => ({ ...prev, [key]: value }))
 			setError(null)
 		},
@@ -277,7 +248,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 			name: problem.name,
 			platform: problem.platform || "",
 			difficulty: problem.difficulty,
-			status: problem.status,
+			isStuck: problem.isStuck,
 			category: problem.category.join(", "),
 		})
 		setError(null)
@@ -319,7 +290,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 			<Collapsible
 				open={open}
 				onOpenChange={setOpen}
-				className="group border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+				className="group border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 shadow-md hover:shadow-lg hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-300 overflow-hidden"
 			>
 				<CollapsibleTrigger asChild>
 					<div className="flex items-center justify-between p-6 cursor-pointer">
@@ -336,11 +307,11 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 								>
 									{problem.difficulty}
 								</div>
-								<div
-									className={`px-2 py-1 rounded-full text-xs font-medium border ${statusStyle.bg} ${statusStyle.color}`}
-								>
-									{problem.status}
-								</div>
+								{problem.isStuck && (
+                                    <div className="px-2 py-1 rounded-full text-xs font-medium border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400">
+                                        Stuck
+                                    </div>
+                                )}
 							</div>
 							{problem.category.length > 0 && (
 								<div className="flex flex-wrap gap-1 mt-2">
@@ -489,43 +460,20 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 													</SelectContent>
 												</Select>
 											</div>
-											<div className="space-y-1">
+											<div className="space-y-1 flex flex-col justify-center">
 												<label
-													htmlFor="settings-status"
-													className="text-sm font-medium"
+													htmlFor="settings-stuck"
+													className="text-sm font-medium flex items-center gap-2 mt-6 cursor-pointer text-red-600 dark:text-red-400"
 												>
-													Status
+                                                    <input
+                                                        id="settings-stuck"
+                                                        type="checkbox"
+                                                        checked={settingsForm.isStuck}
+                                                        onChange={(e) => handleSettingsChange("isStuck", e.target.checked)}
+                                                        className="w-4 h-4 rounded border-gray-300"
+                                                    />
+													Is Stuck?
 												</label>
-												<Select
-													value={settingsForm.status}
-													onValueChange={(
-														v: Status
-													) =>
-														handleSettingsChange(
-															"status",
-															v
-														)
-													}
-												>
-													<SelectTrigger id="settings-status">
-														<SelectValue />
-													</SelectTrigger>
-													<SelectContent>
-														{STATUS_OPTIONS.map(
-															(s) => (
-																<SelectItem
-																	key={s}
-																	value={s}
-																>
-																	{s ===
-																	"ToRevise"
-																		? "To Revise"
-																		: s}
-																</SelectItem>
-															)
-														)}
-													</SelectContent>
-												</Select>
 											</div>
 										</div>
 										<div className="space-y-1">

@@ -27,14 +27,13 @@ import type { Problem } from "@prisma/client"
 
 // Constants
 const DIFFICULTY_OPTIONS = ["Easy", "Medium", "Hard"] as const
-const STATUS_OPTIONS = ["ToRevise", "Stuck", "Solved", "Revisited"] as const
 const MAX_LINK_LENGTH = 200
 const MAX_ID_LENGTH = 50
 const DEBOUNCE_DELAY = 1000
 
 // Type definitions
 type Difficulty = typeof DIFFICULTY_OPTIONS[number]
-type Status = typeof STATUS_OPTIONS[number]
+
 
 interface FormState {
   problemId: string
@@ -42,7 +41,7 @@ interface FormState {
   platform: string
   link: string
   difficulty: Difficulty
-  status: Status
+  isStuck: boolean
   category: string
   dateSolved: string
 }
@@ -137,7 +136,7 @@ export default function AddProblemPage() {
     platform: "",
     link: "",
     difficulty: "Easy",
-    status: "ToRevise",
+    isStuck: false,
     category: "",
     dateSolved: format(new Date(), "yyyy-MM-dd"),
   })
@@ -245,7 +244,7 @@ export default function AddProblemPage() {
             platform: form.platform,
             link: form.link,
             difficulty: form.difficulty,
-            status: form.status,
+            isStuck: form.isStuck,
             category: form.category.split(",").map((t) => t.trim()).filter(Boolean),
             dateSolved: form.dateSolved ? new Date(form.dateSolved) : undefined,
           }
@@ -278,7 +277,7 @@ export default function AddProblemPage() {
       platform: "",
       link: "",
       difficulty: "Easy",
-      status: "ToRevise",
+      isStuck: false,
       category: "",
       dateSolved: format(new Date(), "yyyy-MM-dd"),
     })
@@ -446,31 +445,20 @@ export default function AddProblemPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="flex items-center gap-2 mt-4 mb-2">
+          <input
+            type="checkbox"
+            id="isStuck"
+            checked={form.isStuck}
+            onChange={(e) => handleChange("isStuck" as any, e.target.checked as any)}
+            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-800"
+          />
           <label
-            htmlFor="status"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2"
+            htmlFor="isStuck"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
           >
-            Status
+            Mark as Stuck? (Algorithm flag)
           </label>
-          <Select
-            value={form.status}
-            onValueChange={(value: Status) => handleChange("status", value)}
-          >
-            <SelectTrigger
-              id="status"
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
-              {STATUS_OPTIONS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s === "ToRevise" ? "To Revise" : s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
         <FormField
           id="dateSolved"

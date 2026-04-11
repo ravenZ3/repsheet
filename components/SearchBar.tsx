@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import Fuse from "fuse.js"
 import debounce from "lodash.debounce"
-import { Difficulty, Status, type Problem } from "@prisma/client"
+import { Difficulty, type Problem } from "@prisma/client"
 
 interface SearchBarProps {
 	problems: Problem[]
@@ -25,18 +25,18 @@ interface SearchBarProps {
 
 interface FilterState {
 	difficulty: string
-	status: string
+	isStuck: boolean | "All"
 	platform: string
 	categories: string[]
 }
 
 const DIFFICULTY_OPTIONS = ["All", ...Object.values(Difficulty)]
-const STATUS_OPTIONS = ["All", ...Object.values(Status)]
+
 
 const SORT_OPTIONS = [
 	{ value: "name", label: "Name" },
 	{ value: "difficulty", label: "Difficulty" },
-	{ value: "status", label: "Status" },
+
 	{ value: "platform", label: "Platform" },
 	{ value: "lastReview", label: "Recently Reviewed" },
 ]
@@ -48,7 +48,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 	const [filters, setFilters] = useState<FilterState>({
 		difficulty: "All",
-		status: "All",
+		isStuck: "All",
 		platform: "All",
 		categories: [],
 	})
@@ -74,7 +74,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 					"name",
 					"platform",
 					"difficulty",
-					"status",
+
 					"category",
 					"notes",
 					"mistakesMade",
@@ -92,7 +92,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 				: [...problems]
 
 			if (filters.difficulty !== "All") filtered = filtered.filter((p) => p.difficulty === filters.difficulty)
-			if (filters.status !== "All") filtered = filtered.filter((p) => p.status === filters.status)
+			if (filters.isStuck !== "All") filtered = filtered.filter((p) => p.isStuck === filters.isStuck)
 			if (filters.platform !== "All") filtered = filtered.filter((p) => p.platform === filters.platform)
 			if (filters.categories.length > 0) {
 				filtered = filtered.filter((p) =>
@@ -108,11 +108,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 						aVal = diffOrder[a.difficulty]
 						bVal = diffOrder[b.difficulty]
 						break
-					case "status":
-						const statusOrder: Record<Status, number> = { [Status.ToRevise]: 1, [Status.Revisited]: 2, [Status.Stuck]: 3, [Status.Solved]: 4 }
-						aVal = statusOrder[a.status]
-						bVal = statusOrder[b.status]
-						break
+
 					case "lastReview":
 						aVal = a.lastReview ? new Date(a.lastReview).getTime() : 0
 						bVal = b.lastReview ? new Date(b.lastReview).getTime() : 0
@@ -126,7 +122,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 				return sortOrder === "asc" ? comparison : -comparison
 			})
 
-			const isActive = !!(query.trim() || filters.difficulty !== "All" || filters.status !== "All" || filters.platform !== "All" || filters.categories.length > 0)
+			const isActive = !!(query.trim() || filters.difficulty !== "All" || filters.isStuck !== "All" || filters.platform !== "All" || filters.categories.length > 0)
 			onResults(filtered, isActive)
 		}, 200)
 
@@ -145,7 +141,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 
 	const clearFilters = () => {
 		setQuery("")
-		setFilters({ difficulty: "All", status: "All", platform: "All", categories: [] })
+		setFilters({ difficulty: "All", isStuck: "All", platform: "All", categories: [] })
 		setSortBy("name")
 		setSortOrder("asc")
 	}
@@ -153,7 +149,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 	const hasActiveFilters =
 		query ||
 		filters.difficulty !== "All" ||
-		filters.status !== "All" ||
+		filters.isStuck !== "All" ||
 		filters.platform !== "All" ||
 		filters.categories.length > 0
 
@@ -249,11 +245,11 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 								</Select>
 							</div>
 							<div>
-								<label className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 block">Status</label>
-								<Select value={filters.status} onValueChange={(v) => setFilters((p) => ({ ...p, status: v }))}>
+								<label className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1 block">Is Stuck?</label>
+								<Select value={filters.isStuck.toString()} onValueChange={(v) => setFilters((p) => ({ ...p, isStuck: v === "All" ? "All" : v === "true" }))}>
 									<SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
 									<SelectContent>
-										{STATUS_OPTIONS.map((o) => (<SelectItem key={o} value={o}>{o}</SelectItem>))}
+										{["All", "true", "false"].map((o) => (<SelectItem key={o} value={o}>{o === "true" ? "Yes" : o === "false" ? "No" : o}</SelectItem>))}
 									</SelectContent>
 								</Select>
 							</div>
@@ -305,7 +301,7 @@ export default function SearchBar({ problems, disabled, onResults }: SearchBarPr
 						<span className="font-medium">Active filters:</span>
 						{query && <Badge variant="outline">&quot;{query}&quot;</Badge>}
 						{filters.difficulty !== "All" && <Badge variant="outline">{filters.difficulty}</Badge>}
-						{filters.status !== "All" && <Badge variant="outline">{filters.status}</Badge>}
+						{filters.isStuck !== "All" && <Badge variant="outline">Stuck: {filters.isStuck ? "Yes" : "No"}</Badge>}
 						{filters.platform !== "All" && <Badge variant="outline">{filters.platform}</Badge>}
 						{filters.categories.map((cat) => (<Badge key={cat} variant="outline">{cat}</Badge>))}
 					</motion.div>

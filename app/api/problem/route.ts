@@ -1,4 +1,4 @@
-import { Prisma, Difficulty, Status } from "@prisma/client";
+import { Prisma, Difficulty } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
@@ -9,8 +9,8 @@ const problemSchema = z.object({
   name: z.string().min(1, "Name is required"),
   platform: z.string().min(1, "Platform is required"),
   link: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  difficulty: z.nativeEnum(Difficulty, { errorMap: () => ({ message: "Invalid difficulty value." }) }),
-  status: z.nativeEnum(Status, { errorMap: () => ({ message: "Invalid status value." }) }),
+  difficulty: z.nativeEnum(Difficulty, { invalid_type_error: "Invalid difficulty value." }),
+  isStuck: z.boolean().optional().default(false),
   category: z.union([z.string(), z.array(z.string())]).refine(
     (val) => (Array.isArray(val) ? val.length > 0 : val.trim().length > 0),
     { message: "Category field cannot be empty." }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const parsed = problemSchema.safeParse(body);
     
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: parsed.error.errors[0].message }, { status: 400 });
+      return NextResponse.json({ success: false, message: parsed.error.issues[0].message }, { status: 400 });
     }
     
     const data = parsed.data;
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         platform: data.platform,
         link: data.link || "",
         difficulty: data.difficulty,
-        status: data.status,
+        isStuck: data.isStuck,
         category: categories,
         dateSolved: dateSolved,
         nextReviewDate: dateSolved,

@@ -61,12 +61,6 @@ enum Difficulty {
   Hard
 }
 
-enum Status {
-  Solved
-  ToRevise    
-  Stuck
-  Revisited
-}
 
 model Problem {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -78,7 +72,7 @@ model Problem {
   problemCode    String?
   link           String?
   difficulty     Difficulty
-  status         Status
+  isStuck        Boolean   @default(false)
   category       String[]
   notes          String?
   mistakesMade   String?
