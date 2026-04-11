@@ -4,8 +4,9 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import prisma from "@/lib/prisma" // IMPORT the shared prisma instance instead
 import GitHubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
+import CredentialsProvider from "next-auth/providers/credentials"
 import { type NextAuthOptions } from "next-auth"
-import type { SessionStrategy } from "next-auth"
+import bcrypt from "bcryptjs"
 
 // --- STEP 2: Remove this line ---
 // const prisma = new PrismaClient() // This line is now gone
@@ -21,23 +22,50 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Missing email or password");
+        }
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+        });
+        if (!user || !user.password) {
+          throw new Error("Invalid credentials");
+        }
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+        if (!isValid) {
+          throw new Error("Invalid credentials");
+        }
+        return user;
+      }
+    }),
   ],
 
   // --- STEP 3: ADD THIS ENTIRE `callbacks` OBJECT ---
   callbacks: {
-    session({ session, user }) {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        // Add the user's database ID to the session object
-        session.user.id = user.id;
+        session.user.id = token.id as string;
       }
       return session;
     },
   },
-  // --- END OF ADDITION ---
   
   secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "database" as SessionStrategy,
+    strategy: "jwt",
   },
   pages: {
     signIn: "/login",

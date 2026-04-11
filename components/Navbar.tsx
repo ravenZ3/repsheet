@@ -54,7 +54,6 @@ export default function Navbar() {
               <Link href="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
               <Link href="/problems" className={linkClass('/problems')}>All Problems</Link>
               <Link href="/review" className={linkClass('/review')}>Review</Link>
-              <Link href="/add" className={linkClass('/add')}>Add</Link>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
@@ -89,7 +88,6 @@ export default function Navbar() {
               <Link href="/dashboard" onClick={toggleMenu} className={mobileLinkClass('/dashboard')}>Dashboard</Link>
               <Link href="/problems" onClick={toggleMenu} className={mobileLinkClass('/problems')}>All Problems</Link>
               <Link href="/review" onClick={toggleMenu} className={mobileLinkClass('/review')}>Review</Link>
-              <Link href="/add" onClick={toggleMenu} className={mobileLinkClass('/add')}>Add</Link>
               <button
                 onClick={() => {
                   toggleMenu();

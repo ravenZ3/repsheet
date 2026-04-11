@@ -1,26 +1,27 @@
-"use client"
-
-import { useSession, signIn, signOut } from "next-auth/react"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/lib/authOptions"
 import Link from "next/link"
-import { Github, Chrome, CloverIcon } from "lucide-react"
+import { CloverIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
 import {
 	Accordion,
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion"
+import { MotionDiv } from "@/components/MotionWrapper"
+import { AuthSection } from "@/components/AuthSection"
 
-export default function Home() {
-	const { data: session, status } = useSession()
+export default async function Home() {
+	const session = await getServerSession(authOptions)
+	const isAuthenticated = !!session?.user
 
 	return (
 		<div className="min-h-screen bg-gray-50 dark:bg-gray-950">
 			<main className="container mx-auto px-4 pt-16 pb-8">
 				{/* Hero Section */}
 				<section className="max-w-4xl mx-auto text-center">
-					<motion.div
+					<MotionDiv
 						initial={{ opacity: 0, y: -20 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.5 }}
@@ -34,8 +35,9 @@ export default function Home() {
 							progress, review smarter, and retain problem-solving
 							skills for the long term.
 						</p>
-					</motion.div>
+					</MotionDiv>
 				</section>
+
 				{/* FSRS Information Section */}
 				<section className="max-w-4xl mx-auto mt-16 mb-16 flex justify-center flex-wrap gap-4">
 					<Link href="/review" passHref>
@@ -173,59 +175,18 @@ export default function Home() {
 				</Accordion>
 
 				{/* Authentication Section */}
-				<section className="max-w-4xl mx-auto">
-					<motion.div
+				<section className="max-w-4xl mx-auto mt-16">
+					<MotionDiv
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.5, delay: 0.6 }}
 						className="text-center"
 					>
-						{status === "authenticated" ? (
-							<div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-800">
-								<p className="text-gray-700 dark:text-gray-300">
-									Welcome, {session?.user?.email}! Start
-									tracking your coding journey now.
-								</p>
-								<Button
-									onClick={() => signOut()}
-									className="mt-4 bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 transition"
-								>
-									Sign Out
-								</Button>
-							</div>
-						) : (
-							<div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-800">
-								<h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-									Get Started
-								</h3>
-								<p className="text-gray-700 dark:text-gray-300 mb-6">
-									Sign in to start tracking your coding
-									journey
-								</p>
-								<div className="flex justify-center gap-4">
-									<Button
-										onClick={() => signIn("github")}
-										className="bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 transition flex items-center gap-2"
-									>
-										<Github className="w-5 h-5" />
-										<span className="text-sm font-medium">
-											Sign in with GitHub
-										</span>
-									</Button>
-									<Button
-										onClick={() => signIn("google")}
-										variant="outline"
-										className="text-gray-800 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 transition flex items-center gap-2"
-									>
-										<Chrome className="w-5 h-5" />
-										<span className="text-sm font-medium">
-											Sign in with Google
-										</span>
-									</Button>
-								</div>
-							</div>
-						)}
-					</motion.div>
+						<AuthSection 
+							authenticated={isAuthenticated} 
+							email={session?.user?.email} 
+						/>
+					</MotionDiv>
 				</section>
 			</main>
 		</div>

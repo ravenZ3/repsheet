@@ -1,88 +1,70 @@
-// --- STEP 1: Correct your imports ---
 import { Prisma, Difficulty, Status } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-// Import the shared prisma instance
 import prisma from "@/lib/prisma";
+import { z } from "zod";
 
-// --- This part is good, no changes needed ---
-interface ProblemPostBody {
-  name: string;
-  platform: string;
-  link: string;
-  difficulty: string;
-  status: string;
-  category: string | string[];
-  dateSolved?: string;
-}
-
-function isValidDifficulty(value: string): value is Difficulty {
-  return Object.values(Difficulty).includes(value as Difficulty);
-}
-
-function isValidStatus(value: string): value is Status {
-  return Object.values(Status).includes(value as Status);
-}
-// --- End of unchanged part ---
+const problemSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  platform: z.string().min(1, "Platform is required"),
+  link: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  difficulty: z.nativeEnum(Difficulty, { errorMap: () => ({ message: "Invalid difficulty value." }) }),
+  status: z.nativeEnum(Status, { errorMap: () => ({ message: "Invalid status value." }) }),
+  category: z.union([z.string(), z.array(z.string())]).refine(
+    (val) => (Array.isArray(val) ? val.length > 0 : val.trim().length > 0),
+    { message: "Category field cannot be empty." }
+  ),
+  dateSolved: z.string().optional()
+});
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    // --- STEP 2: Simplify your authentication check ---
-    // Use the user.id we added directly to the session.
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    // The unnecessary database call to find the user is now removed.
 
-    const body: ProblemPostBody = await req.json();
+    const body = await req.json();
+    const parsed = problemSchema.safeParse(body);
+    
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, message: parsed.error.errors[0].message }, { status: 400 });
+    }
+    
+    const data = parsed.data;
 
-    // Your validation logic here is excellent, no changes needed
-    if (!body.name || !body.platform || !body.difficulty || !body.status || !body.category) {
-      return NextResponse.json({ success: false, message: "Missing required fields." }, { status: 400 });
-    }
-    if (!isValidDifficulty(body.difficulty)) {
-        return NextResponse.json({ success: false, message: `Invalid difficulty value.` }, { status: 400 });
-    }
-    if (!isValidStatus(body.status)) {
-        return NextResponse.json({ success: false, message: `Invalid status value.` }, { status: 400 });
-    }
-    // ... all your other validation is good.
-
-    const categories = Array.isArray(body.category)
-      ? body.category.map((tag) => tag.trim()).filter(Boolean)
-      : body.category.split(",").map((tag) => tag.trim()).filter(Boolean);
+    const categories = Array.isArray(data.category)
+      ? data.category.map((tag) => tag.trim()).filter(Boolean)
+      : data.category.split(",").map((tag) => tag.trim()).filter(Boolean);
 
     if (categories.length === 0) {
       return NextResponse.json({ success: false, message: "Category field cannot be empty." }, { status: 400 });
     }
 
-    const dateSolved = body.dateSolved ? new Date(body.dateSolved) : new Date();
+    const dateSolved = data.dateSolved ? new Date(data.dateSolved) : new Date();
     if (isNaN(dateSolved.getTime())) {
       return NextResponse.json({ success: false, message: "Invalid date format for dateSolved." }, { status: 400 });
     }
 
     const problem = await prisma.problem.create({
       data: {
-        // --- STEP 3: Use the direct session user ID ---
-        userId: session.user.id, // More efficient
-        name: body.name,
-        platform: body.platform,
-        link: body.link,
-        difficulty: body.difficulty,
-        status: body.status,
+        userId: session.user.id,
+        name: data.name,
+        platform: data.platform,
+        link: data.link || "",
+        difficulty: data.difficulty,
+        status: data.status,
         category: categories,
         dateSolved: dateSolved,
-        nextReviewDate: dateSolved, // Assuming this is desired logic
+        nextReviewDate: dateSolved,
         reviewCount: 0,
       },
     });
 
     return NextResponse.json({ success: true, problem }, { status: 201 });
   } catch (error: unknown) {
-    // Your error handling is very good, no changes needed here.
     console.error("Error creating problem:", error);
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {

@@ -4,6 +4,7 @@ import "./globals.css";
 import ThemeToggle from "@/components/ThemeToggle";
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/components/AuthProvider";
+import FloatingAddButton from "@/components/FloatingAddButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,10 +48,11 @@ export default function RootLayout({
             </footer>
           </div>
           
-          {/* ThemeToggle can be positioned fixed, outside the main flow */}
-          <div className="fixed bottom-5 right-5">
+          <div className="fixed bottom-5 right-5 z-50">
             <ThemeToggle />
           </div>
+
+          <FloatingAddButton />
         </AuthProvider>
       </body>
     </html>
