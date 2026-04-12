@@ -86,9 +86,9 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
 	}
 
 	return (
-		<div className="flex flex-col h-full w-full bg-white dark:bg-transparent relative text-[13px]">
+		<div className="flex flex-col h-full w-full bg-white dark:bg-[#151515] relative text-[13px]">
             {/* Header Sticky Strip */}
-            <div className="sticky top-0 z-10 flex-shrink-0 p-5 md:p-6 border-b border-gray-100 dark:border-white/[0.08] flex flex-row items-center justify-between dark:bg-white/[0.01] bg-white/80 backdrop-blur-3xl">
+            <div className="sticky top-0 z-10 flex-shrink-0 p-5 md:p-6 border-b border-gray-100 dark:border-white/[0.08] flex flex-row items-center justify-between dark:bg-[#1a1a1a] bg-white/80 dark:backdrop-blur-none backdrop-blur-3xl">
                 <div className="flex items-center gap-3">
                     <LayoutPanelLeft className="w-4 h-4 text-gray-400 dark:text-[#888]" strokeWidth={2}/>
                     <h2 className="text-base font-medium text-gray-900 dark:text-[rgba(255,255,255,0.9)] tracking-tight m-0 line-clamp-1">
