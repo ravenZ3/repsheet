@@ -99,20 +99,33 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         { name: "Flowing", value: flowingCount }
     ];
 
+    const thresholdTime = todayStart.getTime() - 91 * 24 * 60 * 60 * 1000;
 	const heatmap = problems.reduce((acc, p) => {
 		if (!p.dateSolved) return acc
-		const key = format(new Date(p.dateSolved), "yyyy-MM-dd")
+        const solvedTime = new Date(p.dateSolved).getTime();
+		const key = format(solvedTime, "yyyy-MM-dd")
         if (!acc[key]) acc[key] = { count: 0, problems: [] }
 		acc[key].count += 1
-        acc[key].problems.push({ id: p.id, name: p.name, platform: p.platform, difficulty: p.difficulty, platformRating: p.platformRating })
+        
+        // PERFORMANCE BOOST: Only push heavy problem metadata payload for the last 90 days.
+        // This ensures the generic RSC payload size doesn't trend towards infinity over years.
+        if (solvedTime >= thresholdTime) {
+            acc[key].problems.push({ id: p.id, name: p.name, platform: p.platform, difficulty: p.difficulty, platformRating: p.platformRating })
+        }
 		return acc
 	}, {} as Record<string, { count: number, problems: { id: string, name: string, platform: string | null, difficulty: string, platformRating?: number | null }[] }>)
 
-	const heatmapArray = Object.entries(heatmap).map(([date, data]) => ({
-		date,
-		count: data.count,
-        problems: data.problems
-	}))
+	const heatmapArray = Object.entries(heatmap)
+      // PERFORMANCE BOOST: Strip all empty days from the payload explicitly, and bound the historical depth to 90 days.
+      .filter(([date, data]) => {
+           const time = new Date(date).getTime();
+           return data.count > 0 && time >= thresholdTime;
+      })
+      .map(([date, data]) => ({
+		  date,
+		  count: data.count,
+          problems: data.problems
+	  }))
 
 	const data = {
 		status: statusData,
