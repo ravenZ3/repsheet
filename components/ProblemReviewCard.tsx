@@ -83,7 +83,7 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 				>
 					<div 
                         onClick={handleCardClick}
-                        className={`rounded-[14px] transition-all duration-300 p-5 flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden backdrop-blur-xl ${!isCompressed ? 'md:flex-row md:items-center md:gap-6' : ''} ${isSelected ? 'bg-white dark:bg-white/[0.06] border-gray-300 dark:border-white/[0.12] shadow-md border-l-[3px] border-l-red-500/80 ring-4 ring-red-500/10' : 'bg-white dark:bg-black/20 border border-gray-200 dark:border-white/[0.06] shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-white/[0.12] dark:hover:bg-white/[0.03] border-l-[1px]'}`}
+                        className={`rounded-[14px] transition-all duration-300 p-5 flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden backdrop-blur-xl ${!isCompressed ? 'md:flex-row md:items-center md:gap-6' : ''} ${isSelected ? 'bg-white dark:bg-white/[0.08] border-gray-300 dark:border-white/[0.15] shadow-md border-l-[3px] border-l-red-500/80 ring-4 ring-red-500/10' : 'bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06] shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-white/[0.15] dark:hover:bg-white/[0.08] border-l-[1px]'}`}
                     >
 						{isSelected && <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.15] to-transparent mix-blend-overlay pointer-events-none" />}
 						

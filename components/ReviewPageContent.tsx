@@ -70,7 +70,7 @@ export default function ReviewPageContent({
 			{/* Raycast-style glowing ambient red orb behind the interface */}
 			<div className="hidden md:block fixed top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/[0.05] dark:bg-red-500/[0.07] blur-[100px] rounded-full pointer-events-none -z-10" style={{ willChange: "transform", transform: "translateZ(0)" }} />
 
-			<Card className="bg-white dark:bg-black/40 border-[#e2e8f0] dark:border-white/[0.06] shadow-sm mb-8 rounded-2xl backdrop-blur-xl relative overflow-hidden">
+			<Card className="bg-white dark:bg-white/[0.04] border-[#e2e8f0] dark:border-white/[0.08] shadow-sm mb-8 rounded-2xl backdrop-blur-xl relative overflow-hidden">
 				<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay" />
 				<CardHeader className="pb-2">
 					<CardTitle className={`text-sm font-bold tracking-widest uppercase flex items-center ${topicFocus ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
@@ -138,7 +138,7 @@ export default function ReviewPageContent({
 							animate={{ opacity: 1, x: 0 }}
 							exit={{ opacity: 0, transition: { duration: 0 } }}
 							transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-							className="hidden md:block sticky top-24 h-[calc(100vh-120px)] flex-1 min-w-[500px] overflow-hidden rounded-2xl border border-gray-200 dark:border-white/[0.06] bg-white dark:bg-white/[0.03] backdrop-blur-3xl shadow-2xl relative"
+							className="hidden md:block sticky top-24 h-[calc(100vh-120px)] flex-1 min-w-[500px] overflow-hidden rounded-2xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] backdrop-blur-3xl shadow-2xl relative"
 							style={{ willChange: "transform, opacity", boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 24px 48px -12px rgba(0,0,0,0.5)" }}
 						>
 							<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay z-20 pointer-events-none" />
