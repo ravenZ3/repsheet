@@ -73,7 +73,7 @@ function UpcomingContests() {
     }
 
     return (
-        <div className="bg-white dark:bg-[#151515] p-4 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] backdrop-blur-3xl mb-5 flex-shrink-0">
+        <div className="bg-white dark:bg-[#111] p-4 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] backdrop-blur-3xl mt-5 flex-shrink-0">
             <h2 className="text-[17px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] mb-3 flex items-center">
                 <span className="mr-2">🏆</span> Upcoming Contests
             </h2>
@@ -174,7 +174,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 			const tooltipData = payload[0].payload
 			if (tooltipData.solved !== undefined) {
 				return (
-					<div className="bg-white dark:bg-[#151515] p-4 border border-gray-200 dark:border-white/[0.08] rounded-[10px] shadow-2xl backdrop-blur-3xl">
+					<div className="bg-white dark:bg-[#111] p-4 border border-gray-200 dark:border-white/[0.08] rounded-[10px] shadow-2xl backdrop-blur-3xl">
 						<p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
 							{label}
 						</p>
@@ -190,7 +190,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				)
 			}
 			return (
-				<div className="bg-white dark:bg-[#151515] p-4 border border-gray-200 dark:border-white/[0.08] rounded-[10px] shadow-2xl backdrop-blur-3xl">
+				<div className="bg-white dark:bg-[#111] p-4 border border-gray-200 dark:border-white/[0.08] rounded-[10px] shadow-2xl backdrop-blur-3xl">
 					<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
 						{label || payload[0].name}:{" "}
 						<span className="font-bold text-gray-900 dark:text-white">
@@ -280,7 +280,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 		<div className="flex flex-col space-y-4">
 			{/* Global Platform Toggles */}
 			<div className="flex justify-start">
-				<div className="inline-flex bg-white/50 dark:bg-[#151515]/50 backdrop-blur-md border border-gray-200 dark:border-white/[0.08] rounded-[10px] p-1 shadow-sm">
+				<div className="inline-flex bg-white/50 dark:bg-[#111]/50 backdrop-blur-md border border-gray-200 dark:border-white/[0.08] rounded-[10px] p-1 shadow-sm">
 					{['All', 'LeetCode', 'Codeforces'].map((plat) => (
 						<button
 							key={plat}
@@ -288,7 +288,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 							className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-[6px] transition-all duration-200 ${
 								currentPlatform === plat
 									? "bg-white dark:bg-white/[0.08] shadow-sm text-gray-900 dark:text-white"
-									: "text-gray-400 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300"
+									: "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
 							}`}
 						>
 							{plat === 'All' ? 'All Platforms' : plat}
@@ -301,8 +301,8 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				<div className="xl:col-span-3 space-y-4">
 				{/* FSRS Progress UI Module */}
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-				<div className="bg-white dark:bg-[#151515] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
-					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-400 dark:text-gray-300 mb-2 flex items-center">
+				<div className="bg-white dark:bg-[#111] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
+					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center">
 						<span className="mr-2">📚</span> Due Today
 					</h3>
 					<div className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-baseline gap-2">
@@ -313,8 +313,8 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
                     </div>
 				</div>
 
-				<div className="bg-white dark:bg-[#151515] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
-					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-400 dark:text-gray-300 mb-2 flex items-center">
+				<div className="bg-white dark:bg-[#111] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
+					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center">
 						<span className="mr-2">⚡</span> Reviewed Today
 					</h3>
 					<div className="text-2xl font-bold text-green-600 dark:text-green-400">
@@ -322,15 +322,15 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
                     </div>
 				</div>
 
-				<div className="bg-white dark:bg-[#151515] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
-					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-400 dark:text-gray-300 mb-2 flex items-center">
+				<div className="bg-white dark:bg-[#111] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
+					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center">
 						<span className="mr-2">⏳</span> FSRS Backlog
 					</h3>
 					<div className={`text-2xl font-bold ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>
                         +{progress.backlog}
                     </div>
 					{progress.backlog > 0 && (
-                        <p className="text-[13px] text-gray-400 dark:text-gray-300 mt-1.5">
+                        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5">
                             ~{progress.daysToClear} day{progress.daysToClear === 1 ? '' : 's'} to clear
                         </p>
                     )}
@@ -339,7 +339,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 
 			<div className="flex flex-col gap-5">
                 {/* Full Width Trend Chart */}
-				<div className="w-full h-[280px] flex flex-col bg-white dark:bg-[#151515] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
+				<div className="w-full h-[280px] flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
 					<div className="flex-1 min-h-0">
 						<ResponsiveContainer width="100%" height="100%">
 							<AreaChart
@@ -394,7 +394,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				{/* Conditionally Render Difficulty Chart if not strict Codeforces mode */}
 				{currentPlatform !== 'Codeforces' && (
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-5 h-[300px]">
-					<div className="flex flex-col bg-white dark:bg-[#151515] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
+					<div className="flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
                         <div className="flex justify-between items-center mb-1">
                             <h3 className="text-[14px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] flex items-center">
                                 <span className="mr-2">📊</span> {currentPlatform === 'Codeforces' ? 'Rating Distribution' : 'Problem Difficulty'}
@@ -431,7 +431,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 						</div>
 					</div>
 
-					<div className="flex flex-col items-center justify-center bg-white dark:bg-[#151515] p-4 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
+					<div className="flex flex-col items-center justify-center bg-white dark:bg-[#111] p-4 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
 						<div className="overflow-x-auto w-full flex justify-center flex-1 items-center">
 							<div className="grid grid-rows-7 grid-flow-col gap-[3px]">
 								{generateHeatmapGrid().map((day, index) => (
@@ -463,7 +463,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 
 				{/* Full Width Elo Histogram (Dynamic based on data) */}
                 {data.eloDistribution && data.eloDistribution.length > 0 && (
-				<div className="w-full h-[240px] flex flex-col bg-white dark:bg-[#151515] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
+				<div className="w-full h-[240px] flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-[15px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] flex items-center">
                             <span className="mr-2">📈</span> Elo Rating Distribution
@@ -500,8 +500,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 			{processedActivity.length > 0 && (
                 <div className="xl:col-span-1 relative">
                 <div className="sticky top-24 flex flex-col h-[calc(100vh-120px)]">
-                    <UpcomingContests />
-				<div className="bg-white dark:bg-[#151515] p-4 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] relative overflow-hidden backdrop-blur-3xl flex-1 flex flex-col min-h-0">
+				<div className="bg-white dark:bg-[#111] p-4 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] relative overflow-hidden backdrop-blur-3xl flex-1 flex flex-col min-h-0">
 					<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay pointer-events-none" />
 					<div className="flex items-center justify-between mb-4 flex-shrink-0">
 						<h2 className="text-[15px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] flex items-center">
@@ -543,30 +542,30 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 											{activity.count > 1 ? "s" : ""}{" "}
 											solved
 										</p>
-										<p className="text-[13px] mt-0.5 text-gray-400 dark:text-[#999]">
+										<p className="text-[13px] mt-0.5 text-gray-500 dark:text-[#888]">
 											{new Date(activity.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
 										</p>
 									</div>
 								</div>
-								<span className="text-[13px] font-medium text-gray-500 dark:text-[rgba(255,255,255,0.6)]">
+								<span className="text-[13px] font-medium text-gray-600 dark:text-[rgba(255,255,255,0.5)]">
 									{activity.daysAgoText}
 								</span>
 							</div>
                             {expandedDay === activity.date && activity.problems && activity.problems.length > 0 && (
                                 <div className="ml-3 pl-3 border-l-[1.5px] border-gray-200 dark:border-white/[0.06] flex flex-col gap-2 pb-2 mt-1">
                                     {activity.problems.map((p) => (
-                                        <div key={p.id} className="text-[13px] flex items-center justify-between text-gray-600 dark:text-[rgba(255,255,255,0.8)] hover:dark:text-white transition-colors py-1">
+                                        <div key={p.id} className="text-[13px] flex items-center justify-between text-gray-700 dark:text-[rgba(255,255,255,0.7)] hover:dark:text-white transition-colors py-1">
                                             <div className="flex items-center gap-2 pr-3 w-[150px]">
                                                 {p.platform === 'leetcode' && <div className="w-1.5 h-1.5 rounded-full bg-[#FFA116] shadow-[0_0_8px_rgba(255,161,22,0.4)]" title="LeetCode" />}
                                                 {p.platform === 'codeforces' && <div className="w-1.5 h-1.5 rounded-full bg-[#1F8ACB] shadow-[0_0_8px_rgba(31,138,203,0.4)]" title="Codeforces" />}
                                                 {!p.platform && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" title="Manual" />}
                                                 <span className="truncate">{p.name}</span>
                                             </div>
-                                            <span className={`text-[11px] px-2 py-0.5 rounded-[4px] font-bold uppercase tracking-wider flex-shrink-0 border ${
-                                                p.platform === 'Codeforces' || p.platform === 'codeforces' ? 'bg-[#1F8ACB]/15 text-[#1F8ACB] border-[#1F8ACB]/30' :
-                                                p.difficulty === 'Easy' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
-                                                p.difficulty === 'Medium' ? 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30' :
-                                                'bg-purple-500/15 text-purple-400 border-purple-500/30'
+                                            <span className={`text-[11px] px-2 py-0.5 rounded-[4px] font-bold uppercase tracking-wider flex-shrink-0 ${
+                                                p.platform === 'Codeforces' || p.platform === 'codeforces' ? 'bg-[#1F8ACB]/10 text-[#1F8ACB]' :
+                                                p.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                p.difficulty === 'Medium' ? 'bg-indigo-500/10 text-indigo-400' :
+                                                'bg-purple-500/10 text-purple-400'
                                             }`}>
                                                 {p.platformRating ? `Rating ${p.platformRating}` : p.difficulty}
                                             </span>
@@ -578,6 +577,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 						))}
 					</div>
 				</div>
+                <UpcomingContests />
                 </div>
                 </div>
 			)}

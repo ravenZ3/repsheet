@@ -16,12 +16,12 @@ export default function Navbar() {
 
   const linkClass = (path: string, primary = false) => {
     if (primary) {
-      return `block px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all ${pathname === path
+      return `block px-4 py-1.5 rounded-lg text-[14px] font-medium transition-all ${pathname === path
           ? 'bg-gray-900 text-white dark:bg-white dark:text-black shadow-sm'
           : 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-white/[0.08] dark:text-[rgba(255,255,255,0.9)] dark:hover:bg-white dark:hover:text-black'
         }`;
     }
-    return `block px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${pathname === path
+    return `block px-3 py-1.5 rounded-md text-[14px] font-medium transition-colors ${pathname === path
         ? 'text-gray-900 dark:text-[rgba(255,255,255,0.9)]'
         : 'text-gray-500 dark:text-[#888] hover:text-gray-900 dark:hover:text-[rgba(255,255,255,0.9)]'
       }`;
@@ -70,7 +70,7 @@ export default function Navbar() {
                 <SettingsDialog />
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
-                  className="px-3 py-1.5 text-[13px] font-medium text-gray-400 hover:text-gray-900 dark:text-[#888] dark:hover:text-[rgba(255,255,255,0.9)] transition-colors rounded-md"
+                  className="px-3 py-1.5 text-[14px] font-medium text-gray-400 hover:text-gray-900 dark:text-[#888] dark:hover:text-[rgba(255,255,255,0.9)] transition-colors rounded-md"
                 >
                   Log out
                 </button>
@@ -81,7 +81,7 @@ export default function Navbar() {
           {status === 'unauthenticated' && (
             <button
               onClick={() => signIn()}
-              className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+              className="px-3 py-2 text-[14px] font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
             >
               Sign In
             </button>
