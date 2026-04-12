@@ -566,8 +566,8 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 
 			{processedActivity.length > 0 && (
                 <div className="xl:col-span-1 relative">
-                <div className="sticky top-24 flex flex-col h-[calc(100vh-120px)]">
-				<div className="bg-white dark:bg-[#111] p-4 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] relative overflow-hidden backdrop-blur-3xl flex-1 flex flex-col min-h-0">
+                <div className="sticky top-24 flex flex-col max-h-[calc(100vh-120px)] overflow-y-auto pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+				<div className="bg-white dark:bg-[#111] p-4 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] relative overflow-hidden backdrop-blur-3xl flex-shrink-0 h-[500px] flex flex-col min-h-0">
 					<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay pointer-events-none" />
 					<div className="flex items-center justify-between mb-4 flex-shrink-0">
 						<h2 className="text-[15px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] flex items-center">
