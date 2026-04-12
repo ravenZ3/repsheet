@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import {  Loader2,  MenuIcon, X } from 'lucide-react'; // Import Menu and X icons
+import { Loader2, MenuIcon, X } from 'lucide-react'; // Import Menu and X icons
 import rehypeHighlight from "rehype-highlight"
+import SettingsDialog from './SettingsDialog';
 export default function Navbar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -13,18 +14,23 @@ export default function Navbar() {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-  const linkClass = (path: string) =>
-    `block px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
-      pathname === path
-        ? 'font-semibold text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800'
-        : 'text-gray-600 dark:text-gray-300'
-    }`;
+  const linkClass = (path: string, primary = false) => {
+    if (primary) {
+      return `block px-4 py-1.5 rounded-lg text-[13px] font-medium transition-all ${pathname === path
+          ? 'bg-gray-900 text-white dark:bg-white dark:text-black shadow-sm'
+          : 'bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-white/[0.08] dark:text-[rgba(255,255,255,0.9)] dark:hover:bg-white dark:hover:text-black'
+        }`;
+    }
+    return `block px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${pathname === path
+        ? 'text-gray-900 dark:text-[rgba(255,255,255,0.9)]'
+        : 'text-gray-500 dark:text-[#888] hover:text-gray-900 dark:hover:text-[rgba(255,255,255,0.9)]'
+      }`;
+  };
 
   const mobileLinkClass = (path: string) =>
-    `w-full text-left px-4 py-3 rounded-md text-base transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
-      pathname === path
-        ? 'font-bold text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800'
-        : 'text-gray-700 dark:text-gray-300'
+    `w-full text-left px-4 py-3 rounded-md text-base transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${pathname === path
+      ? 'font-bold text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800'
+      : 'text-gray-700 dark:text-gray-300'
     }`;
 
   return (
@@ -33,7 +39,7 @@ export default function Navbar() {
         <Link href="/" className="text-lg font-bold text-gray-900 dark:text-gray-100">
           RepSheet
         </Link>
-        
+
         {/* Mobile menu button, visible only on smaller screens */}
         <div className="md:hidden">
           <button onClick={toggleMenu} className="p-2 text-gray-700 dark:text-gray-300 focus:outline-none">
@@ -51,15 +57,24 @@ export default function Navbar() {
 
           {status === 'authenticated' && (
             <>
-              <Link href="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
-              <Link href="/problems" className={linkClass('/problems')}>All Problems</Link>
-              <Link href="/review" className={linkClass('/review')}>Review</Link>
-              <button
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
-              >
-                Sign Out
-              </button>
+              <div className="flex items-center gap-1">
+                <Link href="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
+                <Link href="/problems" className={linkClass('/problems')}>All Problems</Link>
+              </div>
+
+              <Link href="/review" className={linkClass('/review', true)}>Review</Link>
+
+              <div className="h-4 w-px bg-gray-200 dark:bg-white/[0.1] mx-3" aria-hidden="true" />
+
+              <div className="flex items-center gap-2">
+                <SettingsDialog />
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="px-3 py-1.5 text-[13px] font-medium text-gray-400 hover:text-gray-900 dark:text-[#888] dark:hover:text-[rgba(255,255,255,0.9)] transition-colors rounded-md"
+                >
+                  Log out
+                </button>
+              </div>
             </>
           )}
 
@@ -82,18 +97,21 @@ export default function Navbar() {
               <Loader2 className="mx-auto w-6 h-6 animate-spin text-gray-500" />
             </div>
           )}
-          
+
           {status === 'authenticated' && (
             <>
               <Link href="/dashboard" onClick={toggleMenu} className={mobileLinkClass('/dashboard')}>Dashboard</Link>
               <Link href="/problems" onClick={toggleMenu} className={mobileLinkClass('/problems')}>All Problems</Link>
-              <Link href="/review" onClick={toggleMenu} className={mobileLinkClass('/review')}>Review</Link>
+              <Link href="/review" onClick={toggleMenu} className={`w-full text-left px-4 py-3 rounded-lg text-base font-bold transition-all bg-blue-100 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400`}>Review</Link>
+              <div className="w-full flex justify-start pl-1 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <SettingsDialog />
+              </div>
               <button
                 onClick={() => {
                   toggleMenu();
                   signOut({ callbackUrl: '/' });
                 }}
-                className="w-full text-left px-4 py-3 text-base font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                className="w-full text-left px-4 py-3 text-sm font-semibold uppercase tracking-wider text-gray-500 hover:text-red-500 transition-colors"
               >
                 Sign Out
               </button>

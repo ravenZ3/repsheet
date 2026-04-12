@@ -10,13 +10,10 @@ import { motion } from "framer-motion"
 import { AlertCircle, Loader2 } from "lucide-react"
 import CategoryAutocomplete from "@/components/CategoryAutocomplete"
 
-// Constants
 const DIFFICULTY_OPTIONS = ['Easy', 'Medium', 'Hard'] as const
-const STATUS_OPTIONS = ['To Revise', 'Stuck', 'Solved', 'Revisited'] as const
 
 // Type definitions
 type Difficulty = typeof DIFFICULTY_OPTIONS[number]
-type Status = typeof STATUS_OPTIONS[number]
 
 interface Problem {
   id: string
@@ -25,7 +22,7 @@ interface Problem {
   platform: string
   link: string
   difficulty: Difficulty
-  status: Status
+  isStuck: boolean
   category: string[]
   dateSolved?: string
 }
@@ -89,7 +86,7 @@ function EditProblemCard({ problem }: { problem: Problem }) {
     platform: problem.platform || '',
     link: problem.link || '',
     difficulty: problem.difficulty,
-    status: problem.status,
+    isStuck: problem.isStuck,
     category: problem.category.join(', '),
     dateSolved: problem.dateSolved || '',
   })
@@ -177,7 +174,7 @@ function EditProblemCard({ problem }: { problem: Problem }) {
       platform: problem.platform || '',
       link: problem.link || '',
       difficulty: problem.difficulty,
-      status: problem.status,
+      isStuck: problem.isStuck,
       category: problem.category.join(', '),
       dateSolved: problem.dateSolved || '',
     })
@@ -283,25 +280,18 @@ function EditProblemCard({ problem }: { problem: Problem }) {
           </Select>
         </div>
 
-        <div>
-          <label htmlFor="status" className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
-            Status
-          </label>
-          <Select value={form.status} onValueChange={(value) => handleChange('status', value)}>
-            <SelectTrigger
-              id="status"
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
-              {STATUS_OPTIONS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="mt-4 pt-2">
+          <button
+            type="button"
+            onClick={() => handleChange("isStuck" as unknown as keyof Problem, !form.isStuck as unknown as string)}
+            className={`w-full flex justify-center uppercase tracking-wide py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${
+              form.isStuck
+                ? "bg-red-500 text-white hover:bg-red-600 shadow-inner ring-1 ring-red-600"
+                : "bg-green-100/50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-500 dark:hover:bg-green-900/50 outline-dashed outline-1 outline-green-400 dark:outline-green-600"
+            }`}
+          >
+            {form.isStuck ? "Stuck" : "Stuck?"}
+          </button>
         </div>
 
         <FormField

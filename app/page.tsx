@@ -17,7 +17,7 @@ export default async function Home() {
 	const isAuthenticated = !!session?.user
 
 	return (
-		<div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+		<div className="min-h-screen bg-transparent">
 			<main className="container mx-auto px-4 pt-16 pb-8">
 				{/* Hero Section */}
 				<section className="max-w-4xl mx-auto text-center">
@@ -29,17 +29,14 @@ export default async function Home() {
 						<h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
 							Repsheet
 						</h1>
-						<p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-							Master coding problems with Repsheet&apos;s
-							intelligent spaced repetition scheduler. Track your
-							progress, review smarter, and retain problem-solving
-							skills for the long term.
+						<p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto font-medium tracking-tight">
+							Spaced repetition for competitive programming
 						</p>
 					</MotionDiv>
 				</section>
 
 				{/* FSRS Information Section */}
-				<section className="max-w-4xl mx-auto mt-16 mb-16 flex justify-center flex-wrap gap-4">
+				<section className="max-w-4xl mx-auto mt-10 mb-10 flex justify-center flex-wrap gap-4">
 					<Link href="/review" passHref>
 						<Button className="mx-2 flex items-center gap-2">
 							<span>Start Reviewing</span>
@@ -175,7 +172,7 @@ export default async function Home() {
 				</Accordion>
 
 				{/* Authentication Section */}
-				<section className="max-w-4xl mx-auto mt-16">
+				<section className="max-w-4xl mx-auto mt-10">
 					<MotionDiv
 						initial={{ opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}

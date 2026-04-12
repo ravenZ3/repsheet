@@ -84,9 +84,9 @@ function FormField({
     <div className="space-y-1">
       <label
         htmlFor={id}
-        className="text-sm font-medium text-gray-700 dark:text-gray-300 block"
+        className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block"
       >
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-rose-500/80">*</span>}
       </label>
       <Input
         id={id}
@@ -95,8 +95,8 @@ function FormField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        className={`transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${
-          error ? "border-red-500" : ""
+        className={`transition-all duration-200 focus:ring-0 bg-gray-50/50 dark:bg-white/[0.02] text-gray-900 dark:text-[rgba(255,255,255,0.9)] border-gray-200 dark:border-white/[0.06] focus:border-gray-400 dark:focus:border-white/[0.2] text-[13px] h-9 ${
+          error ? "border-red-500/50 dark:border-rose-500/50" : ""
         }`}
         aria-required={required}
         aria-invalid={!!error}
@@ -177,12 +177,18 @@ export default function AddProblemPage() {
     setFetchStatus("idle")
     try {
       let identifier = form.problemId.trim()
-      if (identifier.startsWith("http")) {
+      let endpoint = "/api/leetcode"
+      
+      // Dynamic routing to the correct Platform API Parser
+      if (identifier.toLowerCase().includes("codeforces.com") || /^\d+[A-Za-z0-9]+$/.test(identifier)) {
+          endpoint = "/api/codeforces"
+      } else if (identifier.startsWith("http")) {
         const extractedSlug = extractProblemIdFromUrl(identifier)
         if (!extractedSlug) throw new Error("Invalid LeetCode URL format.")
         identifier = extractedSlug
       }
-      const response = await fetch("/api/leetcode", {
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier }),
@@ -191,16 +197,16 @@ export default function AddProblemPage() {
       if (!response.ok) throw new Error(result.error || `API responded with status ${response.status}`)
       if (!result.success || !result.data) throw new Error(result.error || "No data received from API.")
       
-      const problemData: LeetCodeProblem = result.data
+      const problemData = result.data
       const difficultyMap: Record<string, Difficulty> = { Easy: "Easy", Medium: "Medium", Hard: "Hard" }
-      const categories = problemData.topicTags.map((tag) => tag.name).join(", ")
+      const categories = problemData.tags ? problemData.tags.join(", ") : (problemData.topicTags?.map((tag: { name: string }) => tag.name).join(", ") || "")
       
       setForm((prev) => ({
         ...prev,
-        problemId: problemData.questionFrontendId || prev.problemId,
+        problemId: problemData.questionFrontendId || identifier,
         name: problemData.title,
-        platform: "LeetCode",
-        link: `https://leetcode.com/problems/${problemData.titleSlug}/`,
+        platform: problemData.platform || "LeetCode",
+        link: problemData.link || `https://leetcode.com/problems/${problemData.titleSlug}/`,
         difficulty: difficultyMap[problemData.difficulty] || "Easy",
         category: categories || prev.category,
       }))
@@ -291,15 +297,20 @@ export default function AddProblemPage() {
   }, [router])
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-      className="max-w-xl mx-auto mt-10 p-4 bg-white dark:bg-gray-900 rounded-2xl shadow-lg"
-    >
-      <h1 className="text-xl mb-4 font-semibold text-gray-800 dark:text-gray-100">
-        Add Problem
-      </h1>
+    <div className="relative w-full z-0 pb-20">
+      {/* Raycast-style glowing ambient red orb */}
+      <div className="hidden md:block fixed top-[10%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/[0.05] dark:bg-red-500/[0.05] blur-[120px] rounded-full pointer-events-none -z-10" style={{ willChange: "transform", transform: "translateZ(0)" }} />
+      
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-xl mx-auto mt-12 p-6 md:p-8 bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] backdrop-blur-3xl rounded-[16px] shadow-2xl relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay pointer-events-none" />
+        <h1 className="text-lg mb-6 font-semibold tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)]">
+          Add Problem
+        </h1>
 
       {errors.form && (
         <motion.div
@@ -318,9 +329,9 @@ export default function AddProblemPage() {
         <div className="space-y-1">
           <label
             htmlFor="problemId"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300 block"
+            className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block"
           >
-            Problem ID <span className="text-red-500">*</span>
+            Problem ID <span className="text-rose-500/80">*</span>
           </label>
           <div className="flex gap-2">
             <Input
@@ -330,8 +341,8 @@ export default function AddProblemPage() {
               onChange={(e) => handleChange("problemId", e.target.value)}
               placeholder="e.g., two-sum, 1, or LeetCode URL"
               maxLength={MAX_ID_LENGTH}
-              className={`flex-1 transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${
-                errors.problemId ? "border-red-500" : ""
+              className={`flex-1 transition-all duration-200 focus:ring-0 bg-gray-50/50 dark:bg-white/[0.02] text-gray-900 dark:text-[rgba(255,255,255,0.9)] border-gray-200 dark:border-white/[0.06] focus:border-gray-400 dark:focus:border-white/[0.2] text-[13px] h-9 ${
+                errors.problemId ? "border-red-500/50 dark:border-rose-500/50" : ""
               }`}
               aria-required={true}
               aria-invalid={!!errors.problemId}
@@ -343,16 +354,16 @@ export default function AddProblemPage() {
               size="sm"
               onClick={fetchProblemDetails}
               disabled={fetching || !form.problemId.trim()}
-              className="px-3 transition-all duration-200 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 min-w-[100px]"
+              className="px-3 transition-all h-9 text-[12px] duration-200 border-gray-200 bg-transparent dark:border-white/[0.08] dark:text-[#888] hover:bg-gray-100 dark:hover:bg-white/[0.05] dark:hover:text-white min-w-[100px]"
             >
               {fetching ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
                   Fetching...
                 </>
               ) : (
                 <>
-                  <Search className="w-4 h-4 mr-1" />
+                  <Search className="w-3.5 h-3.5 mr-1" />
                   Auto-fill
                 </>
               )}
@@ -419,10 +430,10 @@ export default function AddProblemPage() {
           onChange={(value) => handleChange("category", value)}
           error={errors.category}
         />
-        <div>
+        <div className="space-y-1">
           <label
             htmlFor="difficulty"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2"
+            className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block"
           >
             Difficulty
           </label>
@@ -432,11 +443,11 @@ export default function AddProblemPage() {
           >
             <SelectTrigger
               id="difficulty"
-              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700"
+              className="transition-all duration-200 focus:ring-0 bg-gray-50/50 dark:bg-white/[0.02] text-gray-900 dark:text-[rgba(255,255,255,0.9)] border-gray-200 dark:border-white/[0.06] focus:border-gray-400 dark:focus:border-white/[0.2] text-[13px] h-9"
             >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700">
+            <SelectContent className="bg-white dark:bg-[#111] text-gray-900 dark:text-[rgba(255,255,255,0.9)] border-gray-200 dark:border-white/[0.08] text-[13px]">
               {DIFFICULTY_OPTIONS.map((d) => (
                 <SelectItem key={d} value={d}>
                   {d}
@@ -445,21 +456,7 @@ export default function AddProblemPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2 mt-4 mb-2">
-          <input
-            type="checkbox"
-            id="isStuck"
-            checked={form.isStuck}
-            onChange={(e) => handleChange("isStuck" as any, e.target.checked as any)}
-            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-800"
-          />
-          <label
-            htmlFor="isStuck"
-            className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
-          >
-            Mark as Stuck? (Algorithm flag)
-          </label>
-        </div>
+        
         <FormField
           id="dateSolved"
           label="Date Solved"
@@ -468,41 +465,55 @@ export default function AddProblemPage() {
           type="date"
           error={errors.dateSolved}
         />
-        <div className="flex justify-end gap-2 mt-6">
+        
+        <div className="mt-4 mb-3 pt-2">
+          <button
+            type="button"
+            onClick={() => handleChange("isStuck" as unknown as keyof FormState, !form.isStuck as unknown as string)}
+            className={`w-full flex justify-center tracking-wide py-2 rounded-lg font-medium text-[13px] transition-all duration-200 border ${
+              form.isStuck
+                ? "bg-red-500/10 dark:bg-rose-500/[0.05] text-red-600 dark:text-rose-400 border-red-500/30 dark:border-rose-500/20 shadow-sm"
+                : "bg-transparent dark:bg-white/[0.01] text-gray-500 dark:text-[#888] border-gray-200 dark:border-white/[0.05] hover:bg-gray-50 dark:hover:bg-white/[0.03] dark:hover:text-[rgba(255,255,255,0.9)]"
+            }`}
+          >
+            {form.isStuck ? "Stuck ✘" : "Mark as stuck"}
+          </button>
+        </div>
+        
+        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100 dark:border-white/[0.06]">
           <Button
             variant="outline"
             onClick={handleReset}
             disabled={submitting}
-            className="transition-all duration-200 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="transition-all duration-200 border-gray-200 bg-transparent dark:border-white/[0.08] dark:text-[#888] hover:bg-gray-100 dark:hover:bg-white/[0.05] dark:hover:text-white h-8 text-[12px] px-4"
           >
-            Reset
+            Clear
           </Button>
           <Button
             variant="outline"
             onClick={handleCancel}
             disabled={submitting}
-            className="transition-all duration-200 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="transition-all duration-200 border-gray-200 bg-transparent dark:border-white/[0.08] dark:text-[#888] hover:bg-gray-100 dark:hover:bg-white/[0.05] dark:hover:text-white h-8 text-[12px] px-4"
           >
             Cancel
           </Button>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="transition-all duration-200 bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-500 dark:hover:bg-blue-500"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                "Save Problem"
-              )}
-            </Button>
-          </motion.div>
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="transition-all duration-200 bg-gray-900 text-white hover:bg-black dark:bg-white dark:text-black dark:hover:bg-white/90 shadow-sm active:scale-95 h-8 text-[12px] px-5 font-medium border-0"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
+                Saving...
+              </>
+            ) : (
+              "Save Problem"
+            )}
+          </Button>
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }

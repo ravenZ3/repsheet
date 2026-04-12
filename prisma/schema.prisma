@@ -38,12 +38,17 @@ model User {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
   email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  accounts      Account[]
-  sessions      Session[]
-  problems      Problem[]
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  dailyReviewLimit Int       @default(20)
+  leetcodeUsername String?
+  leetcodeLastSyncDate DateTime?
+  codeforcesHandle String?
+  codeforcesLastSyncId Int?
+  accounts         Account[]
+  sessions         Session[]
+  problems         Problem[]
 }
 
 model VerificationToken {
@@ -83,4 +88,5 @@ model Problem {
   fsrsDifficulty Float?
   lastRating     Int?
   lastReview     DateTime?
+  platformRating Int?
 }

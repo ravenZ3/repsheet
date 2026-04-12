@@ -9,7 +9,7 @@ const problemSchema = z.object({
   name: z.string().min(1, "Name is required"),
   platform: z.string().min(1, "Platform is required"),
   link: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  difficulty: z.nativeEnum(Difficulty, { invalid_type_error: "Invalid difficulty value." }),
+  difficulty: z.nativeEnum(Difficulty),
   isStuck: z.boolean().optional().default(false),
   category: z.union([z.string(), z.array(z.string())]).refine(
     (val) => (Array.isArray(val) ? val.length > 0 : val.trim().length > 0),

@@ -1,6 +1,6 @@
 // --- STEP 1: Correct your imports ---
 import prisma from '@/lib/prisma'; // Use the shared instance
-import { Status } from '@prisma/client';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { FSRS, Card, Rating } from 'fsrs.js';
 // Import authentication tools
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         fsrsDifficulty: true,
         reviewCount: true,
         nextReviewDate: true,
-        status: true,
+
         lastRating: true,
         lastReview: true,
       },
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         lastReview: now,
         reviewCount: { increment: 1 },
         nextReviewDate: updatedCardInfo.card.due,
-        status: ratingEnum >= Rating.Good ? Status.Solved : Status.ToRevise,
+
       },
     });
 

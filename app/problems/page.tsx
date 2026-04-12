@@ -17,7 +17,7 @@ export default async function ProblemsPage({
 	// 1. Pagination Params
 	const resolvedParams = await searchParams
 	const page = parseInt(resolvedParams.page || "1", 10)
-	const pageSize = 15
+	const pageSize = 8
 
 	// 2. Fetch Paginated Problems (Phase 1 Default View)
 	const [paginatedProblems, totalProblems] = await Promise.all([
@@ -31,8 +31,7 @@ export default async function ProblemsPage({
 	])
 
 	return (
-		<div className="max-w-4xl mx-auto p-6">
-			{/* Pass the server-rendered paginated slice, along with context for standard pagination */}
+		<div className="w-full">
 			<ProblemsClient
 				initialPaginatedProblems={paginatedProblems}
 				totalProblems={totalProblems}

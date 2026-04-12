@@ -91,12 +91,12 @@ export default function CategoryAutocomplete({
   }, [])
 
   return (
-    <div className="space-y-1" ref={containerRef}>
+    <div className="space-y-1 relative" ref={containerRef}>
       <label
         htmlFor={id}
-        className="text-sm font-medium text-gray-700 dark:text-gray-300 block"
+        className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block"
       >
-        Categories <span className="text-red-500">*</span>
+        Categories <span className="text-rose-500/80">*</span>
       </label>
       <Input
         ref={inputRef}
@@ -109,8 +109,8 @@ export default function CategoryAutocomplete({
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder="Arrays, Dynamic Programming, Trees"
-        className={`transition-all duration-200 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700 ${
-          error ? "border-red-500" : ""
+        className={`transition-all duration-200 focus:ring-0 bg-gray-50/50 dark:bg-white/[0.02] text-gray-900 dark:text-[rgba(255,255,255,0.9)] border-gray-200 dark:border-white/[0.06] focus:border-gray-400 dark:focus:border-white/[0.2] text-[13px] h-9 ${
+          error ? "border-red-500/50 dark:border-rose-500/50" : ""
         }`}
       />
 
@@ -121,21 +121,23 @@ export default function CategoryAutocomplete({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.2 }}
-            className="border rounded-lg mt-1 shadow-lg bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 z-10 absolute w-[300px] max-h-[200px] overflow-y-auto"
+            className="border rounded-[10px] mt-1 bg-white dark:bg-[#111] border-gray-200 dark:border-white/[0.08] z-20 absolute w-[300px] max-h-[200px] overflow-y-auto shadow-2xl"
           >
-            {filteredSuggestions.map((cat, i) => (
-              <li
-                key={cat}
-                className={`px-4 py-2 text-sm cursor-pointer ${
-                  i === highlightedIndex
-                    ? "bg-gray-100 dark:bg-gray-700"
-                    : ""
-                }`}
-                onClick={() => handleSelect(cat)}
-              >
-                {cat}
-              </li>
-            ))}
+            <div className="p-1">
+              {filteredSuggestions.map((cat, i) => (
+                <li
+                  key={cat}
+                  className={`px-3 py-1.5 text-[13px] rounded-md cursor-pointer transition-colors text-gray-900 dark:text-[rgba(255,255,255,0.9)] ${
+                    i === highlightedIndex
+                      ? "bg-gray-100 dark:bg-white/[0.08]"
+                      : "hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+                  }`}
+                  onClick={() => handleSelect(cat)}
+                >
+                  {cat}
+                </li>
+              ))}
+            </div>
           </motion.ul>
         )}
       </AnimatePresence>

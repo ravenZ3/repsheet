@@ -36,6 +36,7 @@ import { toast } from "sonner"
 import debounce from "lodash.debounce"
 import { useRouter } from "next/navigation"
 import { Difficulty, type Problem } from "@prisma/client"
+import CategoryAutocomplete from "@/components/CategoryAutocomplete"
 
 // --- Constants for Configuration ---
 const DIFFICULTY_OPTIONS: Difficulty[] = [
@@ -290,7 +291,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 			<Collapsible
 				open={open}
 				onOpenChange={setOpen}
-				className="group border border-gray-300 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 shadow-md hover:shadow-lg hover:border-gray-400 dark:hover:border-gray-600 transition-all duration-300 overflow-hidden"
+				className="group relative border border-gray-200/50 dark:border-white/[0.08] rounded-[14px] bg-white/40 dark:bg-black/20 backdrop-blur-md shadow-sm hover:shadow-md hover:bg-white/60 dark:hover:bg-white/[0.04] hover:border-gray-300/50 dark:hover:border-white/[0.12] transition-all duration-300 overflow-hidden"
 			>
 				<CollapsibleTrigger asChild>
 					<div className="flex items-center justify-between p-6 cursor-pointer">
@@ -307,11 +308,23 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 								>
 									{problem.difficulty}
 								</div>
+								{problem.platformRating && (
+									<div className="px-2 py-1 rounded-[6px] text-[11px] font-bold border border-[#2B73FF]/30 bg-[#2B73FF]/10 text-[#2B73FF] dark:border-[#2B73FF]/40 dark:bg-[#2B73FF]/20 dark:text-[#5F9CFF] font-mono tracking-wide">
+										{problem.platformRating}
+									</div>
+								)}
 								{problem.isStuck && (
-                                    <div className="px-2 py-1 rounded-full text-xs font-medium border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400">
-                                        Stuck
-                                    </div>
-                                )}
+									<div
+										title="Stuck"
+										className="relative flex h-3 w-3 items-center justify-center ml-1"
+									>
+										<span 
+											className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" 
+											style={{ animationDuration: '3s' }}
+										></span>
+										<span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 shadow-sm border border-red-600"></span>
+									</div>
+								)}
 							</div>
 							{problem.category.length > 0 && (
 								<div className="flex flex-wrap gap-1 mt-2">
@@ -376,7 +389,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 										<Settings className="w-4 h-4 text-gray-500" />
 									</motion.button>
 								</DialogTrigger>
-								<DialogContent className="sm:max-w-md bg-white dark:bg-gray-800">
+								<DialogContent className="sm:max-w-md bg-white/80 dark:bg-black/40 backdrop-blur-3xl border border-gray-200 dark:border-white/[0.08] shadow-2xl">
 									<DialogHeader>
 										<DialogTitle>
 											Problem Settings
@@ -422,82 +435,61 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 												}
 											/>
 										</div>
-										<div className="grid grid-cols-2 gap-4">
-											<div className="space-y-1">
-												<label
-													htmlFor="settings-difficulty"
-													className="text-sm font-medium"
-												>
-													Difficulty
-												</label>
-												<Select
-													value={
-														settingsForm.difficulty
-													}
-													onValueChange={(
-														v: Difficulty
-													) =>
-														handleSettingsChange(
-															"difficulty",
-															v
-														)
-													}
-												>
-													<SelectTrigger id="settings-difficulty">
-														<SelectValue />
-													</SelectTrigger>
-													<SelectContent>
-														{DIFFICULTY_OPTIONS.map(
-															(d) => (
-																<SelectItem
-																	key={d}
-																	value={d}
-																>
-																	{d}
-																</SelectItem>
-															)
-														)}
-													</SelectContent>
-												</Select>
-											</div>
-											<div className="space-y-1 flex flex-col justify-center">
-												<label
-													htmlFor="settings-stuck"
-													className="text-sm font-medium flex items-center gap-2 mt-6 cursor-pointer text-red-600 dark:text-red-400"
-												>
-                                                    <input
-                                                        id="settings-stuck"
-                                                        type="checkbox"
-                                                        checked={settingsForm.isStuck}
-                                                        onChange={(e) => handleSettingsChange("isStuck", e.target.checked)}
-                                                        className="w-4 h-4 rounded border-gray-300"
-                                                    />
-													Is Stuck?
-												</label>
-											</div>
-										</div>
 										<div className="space-y-1">
 											<label
-												htmlFor="settings-category"
+												htmlFor="settings-difficulty"
 												className="text-sm font-medium"
 											>
-												Categories
+												Difficulty
 											</label>
-											<Input
-												id="settings-category"
-												value={settingsForm.category}
-												onChange={(e) =>
+											<Select
+												value={
+													settingsForm.difficulty
+												}
+												onValueChange={(
+													v: Difficulty
+												) =>
 													handleSettingsChange(
-														"category",
-														e.target.value
+														"difficulty",
+														v
 													)
 												}
-												placeholder="Arrays, DP, Trees..."
-											/>
-											<p className="text-xs text-gray-500">
-												Separate with commas.
-											</p>
+											>
+												<SelectTrigger id="settings-difficulty">
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													{DIFFICULTY_OPTIONS.map(
+														(d) => (
+															<SelectItem
+																key={d}
+																value={d}
+															>
+																{d}
+															</SelectItem>
+														)
+													)}
+												</SelectContent>
+											</Select>
 										</div>
+										<div className="pt-2 border-t border-gray-100 dark:border-gray-800 mt-4">
+											<button
+												type="button"
+												onClick={() => handleSettingsChange("isStuck", !settingsForm.isStuck)}
+												className={`w-full py-2 px-4 rounded-md font-medium text-sm transition-all duration-200 ${
+													settingsForm.isStuck
+														? "bg-red-500 text-white hover:bg-red-600 overflow-hidden shadow-inner ring-1 ring-red-600"
+														: "bg-green-100/50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-500 dark:hover:bg-green-900/50 outline-dashed outline-1 outline-green-400 dark:outline-green-600"
+												}`}
+											>
+												{settingsForm.isStuck ? "Stuck" : "Stuck?"}
+											</button>
+										</div>
+										<CategoryAutocomplete
+											id="settings-category"
+											value={settingsForm.category}
+											onChange={(value) => handleSettingsChange("category", value)}
+										/>
 									</div>
 									<div className="flex justify-end gap-2 pt-6">
 										<Button
@@ -575,7 +567,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 										duration: 0.2,
 										ease: "easeOut",
 									}} // A slightly faster transition for the content
-									className="px-6 pb-6 pt-4 space-y-4 border-t border-gray-100 dark:border-gray-700"
+									className="px-6 pb-6 pt-4 space-y-4 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/30 dark:bg-white/[0.01]"
 								>
 									{/* All your content (Textareas, labels, etc.) now lives inside this new motion.div */}
 									<div className="space-y-4">

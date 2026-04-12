@@ -1,111 +1,36 @@
 "use client"
-
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
-import rehypeClassNames from "rehype-class-names"
-import rehypeHighlight from "rehype-highlight"
-import { useState, useCallback, useMemo, useEffect } from "react"
-import { useTheme } from "next-themes"
+import React, { useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import {
-	CheckCircle,
-	Loader2,
-	Calendar,
-	Repeat,
-	Link as LinkIcon,
-	EyeIcon,
-	PenIcon,
-} from "lucide-react"
+import { CheckCircle, Loader2, Calendar, Repeat, Link as LinkIcon } from "lucide-react"
 import { toast } from "sonner"
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Problem } from "@prisma/client"
-import { Status, Difficulty } from "@prisma/client"
+import { Difficulty } from "@prisma/client"
 
 interface ProblemReviewCardProps {
 	problem: Problem
-	onUpdate?: (id: string, updates: Partial<Problem> | null) => void
+	onUpdate?: (id: string, updates: Partial<Problem> | null, isReview?: boolean) => void
+    isSelected?: boolean
+    isCompressed?: boolean
+    onSelect?: () => void
 }
 
-export default function ProblemReviewCard({
-	problem,
-	onUpdate,
-}: ProblemReviewCardProps) {
+export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSelected, isCompressed, onSelect }: ProblemReviewCardProps) {
 	const [rating, setRating] = useState<string>("")
 	const [submitting, setSubmitting] = useState(false)
 	const [isVisible, setIsVisible] = useState(true)
-	const { theme, resolvedTheme } = useTheme()
-
-	// Debug theme and Markdown content
-	useEffect(() => {
-		console.log("Current theme:", theme, "Resolved theme:", resolvedTheme)
-		console.log("Notes:", problem.notes)
-		console.log("Mistakes:", problem.mistakesMade)
-	}, [theme, resolvedTheme, problem.notes, problem.mistakesMade])
-
-	// Style Hooks
-	const statusStyle = useMemo(() => {
-		switch (problem.status) {
-			case Status.Solved:
-				return {
-					color: "text-emerald-600 dark:text-emerald-400",
-					bg: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-700",
-				}
-			case Status.ToRevise:
-				return {
-					color: "text-amber-600 dark:text-amber-400",
-					bg: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700",
-				}
-			case Status.Stuck:
-				return {
-					color: "text-red-600 dark:text-red-400",
-					bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
-				}
-			case Status.Revisited:
-			default:
-				return {
-					color: "text-gray-600 dark:text-gray-400",
-					bg: "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700",
-				}
-		}
-	}, [problem.status])
 
 	const difficultyStyle = useMemo(() => {
 		switch (problem.difficulty) {
 			case Difficulty.Easy:
-				return {
-					color: "text-green-600 dark:text-green-400",
-					bg: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700",
-				}
+				return { color: "text-green-600 dark:text-emerald-400", bg: "border-green-200 dark:border-emerald-500/20 dark:bg-emerald-500/[0.04]" }
 			case Difficulty.Medium:
-				return {
-					color: "text-yellow-600 dark:text-yellow-400",
-					bg: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700",
-				}
+				return { color: "text-yellow-600 dark:text-amber-400", bg: "border-yellow-200 dark:border-amber-500/20 dark:bg-amber-500/[0.04]" }
 			case Difficulty.Hard:
-				return {
-					color: "text-red-600 dark:text-red-400",
-					bg: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700",
-				}
+				return { color: "text-red-500 dark:text-rose-400", bg: "border-red-500/40 dark:border-rose-500/20 dark:bg-rose-500/[0.04]" }
 			default:
-				return {
-					color: "text-gray-600 dark:text-gray-400",
-					bg: "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700",
-				}
+				return { color: "text-gray-600 dark:text-[#888]", bg: "border-gray-200 dark:border-white/10 dark:bg-white/[0.02]" }
 		}
 	}, [problem.difficulty])
 
@@ -114,34 +39,21 @@ export default function ProblemReviewCard({
 			toast.error("Please select a difficulty rating to proceed.")
 			return
 		}
-
 		setSubmitting(true)
 		try {
 			const response = await fetch("/review/mark", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					id: problem.id,
-					rating: Number(rating),
-				}),
+				body: JSON.stringify({ id: problem.id, rating: Number(rating) }),
 			})
-
-			if (!response.ok) {
-				const errorData = await response.json()
-				throw new Error(errorData.error || "Failed to mark review.")
-			}
-
+			if (!response.ok) throw new Error("Failed to mark review.")
 			const updatedProblem = await response.json()
-			toast.success(`"${problem.name}" marked as reviewed!`)
+			toast.success(`"${problem.name}" reviewed!`)
 			setIsVisible(false)
-			onUpdate?.(problem.id, updatedProblem)
+			onUpdate?.(problem.id, updatedProblem, true)
 			setRating("")
 		} catch (err) {
-			const errorMessage =
-				err instanceof Error
-					? err.message
-					: "An unknown error occurred."
-			toast.error(errorMessage)
+			toast.error(err instanceof Error ? err.message : "An unknown error occurred.")
 		} finally {
 			setSubmitting(false)
 		}
@@ -149,204 +61,117 @@ export default function ProblemReviewCard({
 
 	const formatDate = (date: Date | null) => {
 		if (!date) return "N/A"
-		return new Date(date).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-		})
+		return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
 	}
 
-	const classNames = {
-		h1: "text-xl font-bold mb-3",
-		h2: "text-lg font-semibold mb-2",
-		h3: "text-base font-semibold mb-2",
-		p: "mb-2 text-sm leading-relaxed",
-		ul: "list-disc pl-4 mb-2 space-y-1",
-		ol: "list-decimal pl-4 mb-2 space-y-1",
-		li: "text-sm",
-		code: " px-1 py-0.5 rounded text-sm font-mono",
-		pre: "bg-muted/50 p-2 rounded text-xs font-mono overflow-x-auto mb-4",
-		blockquote: "border-l-4 border-muted pl-4 italic mb-2",
-		strong: "font-semibold",
-		em: "italic",
-		del: "line-through",
-		table: "w-full border-collapse border border-muted mb-4",
-		thead: "bg-muted",
-		tr: "border-b border-muted",
-		th: "border border-muted p-2 text-left font-semibold",
-		td: "border border-muted p-2",
-		input: "mr-2",
-	}
-
-	const MarkdownContent = ({ content }: { content: string | null }) => (
-		<div className="markdown-content">
-			<ReactMarkdown
-				remarkPlugins={[remarkGfm]}
-				rehypePlugins={[
-					[rehypeHighlight, { ignoreMissing: true }],
-					[rehypeClassNames, classNames],
-				]}
-			>
-				{content || "No content available."}
-			</ReactMarkdown>
-		</div>
-	)
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Prevent expanding panel if clicking on an interactive element
+        const target = e.target as HTMLElement;
+        if (target.closest('button') || target.closest('a') || target.closest('[role="combobox"]')) return;
+        onSelect?.();
+    }
 
 	return (
 		<AnimatePresence>
 			{isVisible && (
 				<motion.li
-					layout
-					initial={{ opacity: 0, y: 50, scale: 0.95 }}
+					initial={{ opacity: 0, y: 30, scale: 0.98 }}
 					animate={{ opacity: 1, y: 0, scale: 1 }}
-					exit={{ opacity: 0, x: -100, height: 0, marginBottom: 0 }}
-					transition={{ duration: 0.4, ease: "easeOut" }}
+					exit={{ opacity: 0, x: -50, height: 0, marginBottom: 0 }}
+					transition={{ duration: 0.3, ease: "easeOut" }}
 					className="list-none"
 				>
-					<div className="border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-lg transition-all duration-300 p-6 flex flex-col md:flex-row items-start justify-between gap-6">
-						{/* Left Side: Problem Info */}
-						<div className="flex-1 min-w-0 w-full">
-							<div className="grid grid-cols-6 gap-1 w-full">
+					<div 
+                        onClick={handleCardClick}
+                        className={`rounded-[14px] transition-all duration-300 p-5 flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden backdrop-blur-xl ${!isCompressed ? 'md:flex-row md:items-center md:gap-6' : ''} ${isSelected ? 'bg-gray-50/50 dark:bg-white/[0.06] border-gray-300 dark:border-white/[0.12] shadow-sm border-l-[3px] border-l-red-500/80' : 'bg-white dark:bg-black/20 border border-[#e2e8f0] dark:border-white/[0.06] shadow-sm hover:border-gray-300 dark:hover:border-white/[0.12] dark:hover:bg-white/[0.03] border-l-[1px]'}`}
+                    >
+						{isSelected && <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.15] to-transparent mix-blend-overlay pointer-events-none" />}
+						
+						{/* Left Side: Detail stack */}
+						<div className="flex-1 min-w-0 flex flex-col gap-2">
+							{/* Top row: Title and Badges */}
+							<div className="flex flex-wrap items-center gap-3">
 								<a
 									href={problem.link || "#"}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="col-span-4 text-lg font-semibold text-gray-800 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-2"
+									className={`font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-2 ${isCompressed ? 'text-base' : 'text-[17px]'}`}
 								>
 									{problem.name}
+									{problem.link && <LinkIcon className="w-3.5 h-3.5 text-gray-400 dark:text-[#888]" strokeWidth={2} />}
 								</a>
-								<a
-									href={problem.link || "#"}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-lg font-semibold text-gray-800 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-2"
-								>
-									{problem.link && (
-										<LinkIcon className="w-4 h-4 text-gray-400" />
-									)}
-								</a>
-
-								<Dialog>
-									<DialogTrigger>
-										<EyeIcon />
-									</DialogTrigger>
-									<DialogContent className="!max-w-6xl !w-[90vw] !max-h-[90vh] overflow-hidden flex flex-col">
-										<DialogHeader className="flex-shrink-0">
-											<DialogTitle>
-												{problem.name}
-
-												<PenIcon
-													className="inline mx-2"
-													height={12}
-													width={12}
-												/>
-											</DialogTitle>
-										</DialogHeader>
-
-										<DialogDescription className="flex-1 overflow-auto">
-											<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-												{problem?.notes?.length === 0 &&
-												!problem?.mistakesMade ? (
-													<div className="col-span-full flex items-center justify-center h-32 text-muted-foreground">
-														No notes or mistakes
-														recorded.
-													</div>
-												) : (
-													<>
-														<div className="space-y-2">
-															<h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-																Notes
-															</h3>
-															<div className="p-4 bg-muted/50 rounded-lg overflow-auto max-h-[60vh] prose prose-sm prose-zinc dark:prose-invert max-w-none">
-																<MarkdownContent
-																	content={
-																		problem.notes ||
-																		"No notes available."
-																	}
-																/>
-															</div>
-														</div>
-
-														<div className="space-y-2">
-															<h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-																Mistakes Made
-															</h3>
-															<div className="p-4 bg-muted/50 rounded-lg overflow-auto max-h-[60vh] prose prose-sm prose-slate dark:prose-invert max-w-none">
-																<MarkdownContent
-																	content={
-																		problem.mistakesMade ||
-																		"No mistakes recorded."
-																	}
-																/>
-															</div>
-														</div>
-													</>
-												)}
-											</div>
-										</DialogDescription>
-									</DialogContent>
-								</Dialog>
 							</div>
-							<p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-								Categories:{" "}
-								{problem.category.length
-									? problem.category.join(", ")
-									: "None"}
-							</p>
 
-							<div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 dark:text-gray-400 mt-4 border-t border-gray-100 dark:border-gray-700 pt-4">
-								<div
-									className="flex items-center gap-2"
-									title="Next Review Date"
-								>
-									<Calendar className="w-4 h-4" />
-									<span>
-										{formatDate(problem.nextReviewDate)}
-									</span>
+                            {!isCompressed && (
+							    <p className="text-[13px] font-medium text-gray-500 dark:text-[#888]">
+								    Categories: <span className="text-gray-700 dark:text-[rgba(255,255,255,0.7)]">{problem.category.length ? problem.category.join(", ") : "None"}</span>
+							    </p>
+                            )}
+
+							{/* Separator Line */}
+							<div className={`w-full h-px bg-gray-100 dark:bg-white/[0.06] ${isCompressed ? 'my-0.5' : 'my-1'}`} />
+
+							<div className="flex flex-wrap items-center justify-between gap-4 text-[13px] font-medium text-gray-500 dark:text-[#888]">
+								<div className="flex items-center gap-4">
+									<div className="flex items-center gap-1.5" title="Next Review Date">
+										<Calendar className="w-3.5 h-3.5 opacity-70" strokeWidth={2} />
+										<span>{formatDate(problem.nextReviewDate)}</span>
+									</div>
+									<div className="flex items-center gap-1.5" title="Total Reviews Done">
+										<Repeat className="w-3.5 h-3.5 opacity-70" strokeWidth={2} />
+										<span>{problem.reviewCount ?? 0} Reviews</span>
+									</div>
 								</div>
-								<div
-									className="flex items-center gap-2"
-									title="Total Reviews Done"
-								>
-									<Repeat className="w-4 h-4" />
-									<span>
-										{problem.reviewCount ?? 0} Reviews
-									</span>
+								
+								{/* Left side aligned Badges for mobile, or if compressed */}
+								<div className={`${!isCompressed ? 'md:hidden' : ''} flex items-center gap-2`}>
+									{problem.isStuck && (
+										<div className="px-2.5 py-0.5 border rounded-full text-[11px] font-medium tracking-wide bg-red-50 dark:bg-rose-500/[0.04] border-red-200 dark:border-rose-500/20 text-red-600 dark:text-rose-400">
+											Stuck
+										</div>
+									)}
+									<div className={`px-2.5 py-0.5 border rounded-full text-[11px] font-medium tracking-wide ${difficultyStyle.bg} ${difficultyStyle.color}`}>
+										{problem.difficulty}
+									</div>
+									{problem.platformRating && (
+										<div className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold border border-[#2B73FF]/30 bg-[#2B73FF]/10 text-[#2B73FF] dark:border-[#2B73FF]/40 dark:bg-[#2B73FF]/20 dark:text-[#5F9CFF] font-mono tracking-wide">
+											{problem.platformRating}
+										</div>
+									)}
 								</div>
 							</div>
 						</div>
 
 						{/* Right Side: Status Badges and Actions */}
-						<div className="flex flex-col items-stretch md:items-end gap-3 w-full md:w-auto">
-							<div className="flex items-center justify-end gap-2">
-								<div
-									className={`px-3 py-1 border rounded-full text-xs font-medium text-center ${difficultyStyle.bg} ${difficultyStyle.color}`}
-								>
-									{problem.difficulty}
-								</div>
-								<div
-									className={`px-3 py-1 border rounded-full text-xs font-medium text-center ${statusStyle.bg} ${statusStyle.color}`}
-								>
-									{problem.status}
-								</div>
-							</div>
+						<div className={`flex flex-col items-end justify-between gap-4 self-stretch pt-2 ${!isCompressed ? 'md:w-auto md:pt-0' : 'w-full'}`}>
+							
+							{/* Badges on Desktop */}
+                            {!isCompressed && (
+							    <div className="hidden md:flex items-center gap-2.5">
+								    {problem.isStuck && (
+									    <div className="px-2.5 py-0.5 border rounded-full text-[11px] font-medium tracking-wide bg-red-50 dark:bg-rose-500/[0.04] border-red-200 dark:border-rose-500/20 text-red-600 dark:text-rose-400">
+										    Stuck
+									    </div>
+								    )}
+								    <div className={`px-2.5 py-0.5 border rounded-full text-[11px] font-medium tracking-wide bg-transparent ${difficultyStyle.bg} ${difficultyStyle.color}`}>
+									    {problem.difficulty}
+								    </div>
+									{problem.platformRating && (
+										<div className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold border border-[#2B73FF]/30 bg-[#2B73FF]/10 text-[#2B73FF] dark:border-[#2B73FF]/40 dark:bg-[#2B73FF]/20 dark:text-[#5F9CFF] font-mono tracking-wide">
+											{problem.platformRating}
+										</div>
+									)}
+							    </div>
+                            )}
 
-							<div className="flex items-center gap-2 mt-2">
-								<Select
-									value={rating}
-									onValueChange={setRating}
-									disabled={submitting}
-								>
-									<SelectTrigger
-										className="w-full md:w-[150px]"
-										aria-label="Select review rating"
-									>
-										<SelectValue placeholder="How hard was it?" />
+							{/* Action Control */}
+							<div className={`flex items-center gap-2.5 w-full justify-end mt-auto ${!isCompressed ? 'md:w-auto' : ''}`}>
+								<Select value={rating} onValueChange={setRating} disabled={submitting}>
+									<SelectTrigger className={`bg-white dark:bg-white/[0.04] border-gray-200 dark:border-white/[0.08] shadow-sm text-[13px] font-medium dark:text-[rgba(255,255,255,0.9)] focus:ring-0 ${isCompressed ? 'flex-1 h-8' : 'w-[140px] md:w-[150px] h-9'}`} aria-label="Select review rating">
+										<SelectValue placeholder="How hard?" />
 									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="1">
-											Again (Forgot)
-										</SelectItem>
+									<SelectContent className="dark:bg-[#111] dark:border-white/[0.08] text-[13px] dark:text-[rgba(255,255,255,0.9)]">
+										<SelectItem value="1">Again (Forgot)</SelectItem>
 										<SelectItem value="2">Hard</SelectItem>
 										<SelectItem value="3">Good</SelectItem>
 										<SelectItem value="4">Easy</SelectItem>
@@ -355,19 +180,16 @@ export default function ProblemReviewCard({
 								<Button
 									onClick={handleReview}
 									disabled={submitting || !rating}
-									className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+									className={`p-0 bg-gray-900 text-white hover:bg-black dark:bg-white dark:text-black dark:hover:bg-white/90 shadow-sm transition-all active:scale-95 shrink-0 hover:shadow-md ${isCompressed ? 'h-8 w-8 rounded-md' : 'h-9 w-9 rounded-md'}`}
 								>
-									{submitting ? (
-										<Loader2 className="w-4 h-4 animate-spin" />
-									) : (
-										<CheckCircle className="w-4 h-4" />
-									)}
+									{submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-4 h-4" strokeWidth={2.5}/>}
 								</Button>
 							</div>
 						</div>
+
 					</div>
 				</motion.li>
 			)}
 		</AnimatePresence>
 	)
-}
+})

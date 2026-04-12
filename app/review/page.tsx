@@ -22,48 +22,60 @@ export default async function ReviewPage() {
   }
 
   let problems: Problem[] = [];
-  let totalCount = 0;
   let reviewedToday = 0; // Note: This query might not be what you intend, see below.
+  let totalDue = 0;
+  let limit = 20;
   let error: string | null = null;
 
   try {
-    // --- STEP 4: Use the session ID in all database queries ---
-    [problems, totalCount, reviewedToday] = await Promise.all([
-      // Get problems due for review today or earlier
-      prisma.problem.findMany({
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { dailyReviewLimit: true },
+    });
+    limit = user?.dailyReviewLimit || 20;
+
+    reviewedToday = await prisma.problem.count({
+      where: {
+        userId: session.user.id,
+        lastReview: {
+          gte: startOfDay(today),
+          lte: endOfDay(today),
+        },
+      },
+    });
+
+    const remainingQuota = Math.max(0, limit - reviewedToday);
+
+    totalDue = await prisma.problem.count({
         where: {
-          userId: session.user.id, // <-- SECURITY FIX
+            userId: session.user.id,
+            nextReviewDate: { lte: today },
+        }
+    });
+
+    problems = remainingQuota > 0 ? await prisma.problem.findMany({
+        where: {
+          userId: session.user.id,
           nextReviewDate: { lte: today },
         },
         orderBy: { nextReviewDate: 'asc' },
-      }),
-      // Get the total number of problems the user has
-      prisma.problem.count({
-        where: {
-          userId: session.user.id, // <-- SECURITY FIX
-        },
-      }),
-      // Get the number of problems that were/are scheduled for today
-      prisma.problem.count({
-        where: {
-          userId: session.user.id, // <-- SECURITY FIX
-          nextReviewDate: {
-            gte: startOfDay(today),
-            lte: endOfDay(today),
-          },
-        },
-      }),
-    ]);
+        take: remainingQuota
+      }) : [];
   } catch (err) {
     console.error('[REVIEW_PAGE_ERROR]', err);
     error = err instanceof Error ? err.message : 'Failed to fetch review data';
   }
 
+  const cappedDue = Math.min(totalDue, limit > 0 ? limit : totalDue);
+  const backlog = Math.max(0, totalDue - cappedDue);
+  const daysToClear = limit > 0 && backlog > 0 ? Math.ceil(backlog / limit) : 0;
+
   return (
     <ReviewPageContent
       problems={problems}
-      totalCount={totalCount}
       reviewedToday={reviewedToday}
+      backlog={backlog}
+      daysToClear={daysToClear}
       error={error}
     />
   );

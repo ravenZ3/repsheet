@@ -1,4 +1,4 @@
-import { PrismaClient, Difficulty, Status } from '@prisma/client';
+import { PrismaClient, Difficulty } from "@prisma/client"
 import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
@@ -11,11 +11,7 @@ function isValidDifficulty(value: unknown): value is Difficulty {
   return Object.values(Difficulty).includes(value as Difficulty);
 }
 
-// Helper to validate that a value is a valid Status
-// The fix is to use `unknown` instead of `any`
-function isValidStatus(value: unknown): value is Status {
-  return Object.values(Status).includes(value as Status);
-}
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +20,7 @@ export async function POST(req: NextRequest) {
     
     // formData.get() returns `FormDataEntryValue | null` which is compatible with `unknown`
     const difficulty = formData.get('difficulty');
-    const status = formData.get('status');
+    const isStuck = formData.get('isStuck') === 'true';
     const name = formData.get('name') as string;
 
     // --- VALIDATION LOGIC ---
@@ -40,12 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!isValidStatus(status)) {
-      return NextResponse.json(
-        { message: `Invalid status. Must be one of: ${Object.values(Status).join(", ")}` },
-        { status: 400 }
-      );
-    }
+
     // --- END VALIDATION ---
 
     await prisma.problem.update({
@@ -55,7 +46,7 @@ export async function POST(req: NextRequest) {
         link: formData.get('link') as string,
         platform: formData.get('platform') as string,
         difficulty: difficulty, // This is now safe and correctly typed
-        status: status,         // This is also safe and correctly typed
+        isStuck: isStuck,
         category: (formData.get('category') as string).split(',').map((x) => x.trim()),
       },
     });
