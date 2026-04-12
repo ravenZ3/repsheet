@@ -23,6 +23,7 @@ export type DashboardData = {
 	difficulty: ChartData
 	heatmap: HeatmapData
     eloDistribution?: ChartData
+    skills?: ChartData
 }
 
 export type ProgressData = {
@@ -97,6 +98,72 @@ function UpcomingContests() {
                         </div>
                     </div>
                 ))}
+            </div>
+        </div>
+    )
+}
+
+function SkillsMastery({ skills }: { skills?: ChartData }) {
+    const [expanded, setExpanded] = useState(false);
+    const router = useRouter();
+
+    if (!skills || skills.length === 0) return null;
+
+    // Advanced heuristics (very naive mapping, but works for CP aesthetics)
+    // In a real app we'd map via dictionary or static sets.
+    const getSkillTier = (name: string) => {
+        const lower = name.toLowerCase();
+        if (lower.includes("dynamic programming") || lower.includes("tree") || lower.includes("graph") || lower.includes("trie") || lower.includes("segment") || lower.includes("math")) return "Advanced";
+        if (lower.includes("binary search") || lower.includes("hash") || lower.includes("two pointer") || lower.includes("stack") || lower.includes("queue")) return "Intermediate";
+        return "Fundamental";
+    };
+
+    const groupedSkills = useMemo(() => {
+        const groups: Record<string, ChartData> = { Advanced: [], Intermediate: [], Fundamental: [] };
+        skills.forEach(s => {
+            groups[getSkillTier(s.name)].push(s);
+        });
+        return groups;
+    }, [skills]);
+
+    const renderGroup = (title: string, groupSkills: ChartData, maxDisplay: number, colorClass: string) => {
+        if (groupSkills.length === 0) return null;
+        
+        const displaySkills = expanded ? groupSkills : groupSkills.slice(0, maxDisplay);
+        const hasMore = !expanded && groupSkills.length > maxDisplay;
+
+        return (
+            <div className="mb-4 last:mb-0">
+                <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${colorClass}`} />
+                    <span className="text-[14px] font-medium text-gray-900 dark:text-gray-100">{title}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {displaySkills.map((s, i) => (
+                        <button key={i} onClick={() => router.push(`/review?topic=${encodeURIComponent(s.name)}`)} className="flex items-center gap-1.5 bg-gray-100/50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06] hover:dark:bg-white/[0.08] transition-colors rounded-[20px] px-3 py-1 cursor-pointer">
+                            <span className="text-[13px] text-gray-700 dark:text-[rgba(255,255,255,0.8)]">{s.name}</span>
+                            <span className="text-[11px] text-gray-500 dark:text-[#888]">x{s.value}</span>
+                        </button>
+                    ))}
+                </div>
+                {hasMore && (
+                    <button onClick={() => setExpanded(true)} className="mt-2 text-[12px] text-gray-500 hover:text-gray-900 dark:text-[#666] dark:hover:text-[#999] transition-colors font-medium">
+                        Show more
+                    </button>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="bg-white dark:bg-[#111] p-5 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] backdrop-blur-3xl mt-5 flex-shrink-0">
+            <h2 className="text-[17px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] mb-4 flex items-center">
+                Skills
+            </h2>
+            <div className="space-y-1">
+                {renderGroup("Advanced", groupedSkills.Advanced, 3, "bg-rose-500")}
+                {renderGroup("Intermediate", groupedSkills.Intermediate, 3, "bg-amber-500")}
+                {renderGroup("Fundamental", groupedSkills.Fundamental, 3, "bg-emerald-500")}
             </div>
         </div>
     )
@@ -578,6 +645,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 					</div>
 				</div>
                 <UpcomingContests />
+                <SkillsMastery skills={data.skills} />
                 </div>
                 </div>
 			)}

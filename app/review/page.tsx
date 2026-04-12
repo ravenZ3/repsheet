@@ -9,8 +9,11 @@ import { redirect } from 'next/navigation';
 
 // REMOVE: const prisma = new PrismaClient()
 
-export default async function ReviewPage() {
+export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ topic?: string }> }) {
   const today = new Date();
+  
+  const resolvedParams = await searchParams;
+  const topicFilter = resolvedParams.topic;
 
   // --- STEP 2: Get the user's session securely ---
   const session = await getServerSession(authOptions);
@@ -49,17 +52,18 @@ export default async function ReviewPage() {
     totalDue = await prisma.problem.count({
         where: {
             userId: session.user.id,
-            nextReviewDate: { lte: today },
+            ...(topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
         }
     });
 
-    problems = remainingQuota > 0 ? await prisma.problem.findMany({
+    problems = remainingQuota > 0 || topicFilter ? await prisma.problem.findMany({
         where: {
           userId: session.user.id,
-          nextReviewDate: { lte: today },
+          // If filtering by topic, bypass the strict FSRS nextReviewDate timeline restriction
+          ...(topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
         },
-        orderBy: { nextReviewDate: 'asc' },
-        take: remainingQuota
+        orderBy: topicFilter ? { lastReview: 'asc' } : { nextReviewDate: 'asc' },
+        take: topicFilter ? 50 : remainingQuota // Pull up to 50 items for focused practice mode
       }) : [];
   } catch (err) {
     console.error('[REVIEW_PAGE_ERROR]', err);
@@ -77,6 +81,7 @@ export default async function ReviewPage() {
       backlog={backlog}
       daysToClear={daysToClear}
       error={error}
+      topicFocus={topicFilter}
     />
   );
 }

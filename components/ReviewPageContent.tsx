@@ -16,6 +16,7 @@ interface ReviewPageContentProps {
     backlog: number
     daysToClear: number
 	error: string | null
+    topicFocus?: string
 }
 
 export default function ReviewPageContent({
@@ -24,6 +25,7 @@ export default function ReviewPageContent({
     backlog,
     daysToClear,
 	error,
+    topicFocus,
 }: ReviewPageContentProps) {
 	// 2. Instantiate the router
 	const router = useRouter()
@@ -71,15 +73,15 @@ export default function ReviewPageContent({
 			<Card className="bg-white dark:bg-black/40 border-[#e2e8f0] dark:border-white/[0.06] shadow-sm mb-8 rounded-2xl backdrop-blur-xl relative overflow-hidden">
 				<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay" />
 				<CardHeader className="pb-2">
-					<CardTitle className="text-sm font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400 flex items-center">
-						<span className="mr-2 text-base">📊</span> Progress Today
+					<CardTitle className={`text-sm font-bold tracking-widest uppercase flex items-center ${topicFocus ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+						<span className="mr-2 text-base">{topicFocus ? '🎯' : '📊'}</span> {topicFocus ? `${topicFocus} Focus Mode` : 'Progress Today'}
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="text-gray-800 dark:text-gray-100 grid grid-cols-3 gap-4 pb-6">
 					<div className="flex flex-col items-center text-center">
 						<p className="text-3xl font-bold text-gray-900 dark:text-white mb-1.5">{problems.length}</p>
 						<p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-500">
-							Due Today
+							{topicFocus ? 'In Queue' : 'Due Today'}
 						</p>
 					</div>
 					<div className="flex flex-col items-center text-center">

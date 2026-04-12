@@ -27,7 +27,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
 	const problems = await prisma.problem.findMany({
 		where: baseWhere,
-		select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true },
+		select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true, category: true },
 	})
 
 	const now = new Date();
@@ -78,6 +78,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 		return Object.entries(result).map(([name, value]) => ({ name, value })).sort((a,b) => parseInt(a.name) - parseInt(b.name));
 	}
 
+    const computeSkills = () => {
+        const skillsMap: Record<string, number> = {};
+        for (const p of problems) {
+            if (p.category && Array.isArray(p.category)) {
+                for (const cat of p.category) {
+                    skillsMap[cat] = (skillsMap[cat] || 0) + 1;
+                }
+            }
+        }
+        return Object.entries(skillsMap)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+    };
+
     const stuckCount = problems.filter(p => p.isStuck).length;
     const flowingCount = problems.length - stuckCount;
     const statusData = [
@@ -104,7 +118,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 		status: statusData,
 		difficulty: countBy("difficulty"),
 		heatmap: heatmapArray,
-        eloDistribution: countElo()
+        eloDistribution: countElo(),
+        skills: computeSkills()
 	}
 
 	return (
