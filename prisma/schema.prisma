@@ -87,6 +87,7 @@ model Problem {
   nextReviewDate DateTime?
   stability      Float?
   fsrsDifficulty Float?
+  fsrsState      Int       @default(0)
   lastRating     Int?
   lastReview     DateTime?
   platformRating Int?

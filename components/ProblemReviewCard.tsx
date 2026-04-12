@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, Loader2, Calendar, Repeat, Link as LinkIcon } from "lucide-react"
+import { CheckCircle, Loader2, Calendar, Repeat, Link as LinkIcon, Activity } from "lucide-react"
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Problem } from "@prisma/client"
@@ -58,6 +58,14 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 			setSubmitting(false)
 		}
 	}, [problem.id, problem.name, rating, onUpdate])
+
+	const retrievability = useMemo(() => {
+		if (!problem.lastReview || !problem.stability) return null
+		const msPerDay = 1000 * 60 * 60 * 24
+		const elapsedDays = (new Date().getTime() - new Date(problem.lastReview).getTime()) / msPerDay
+		const r = Math.pow(1 + elapsedDays / (9 * problem.stability), -1)
+		return Math.round(r * 100)
+	}, [problem.lastReview, problem.stability])
 
 	const formatDate = (date: Date | null) => {
 		if (!date) return "N/A"
@@ -121,6 +129,12 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 										<Repeat className="w-3.5 h-3.5 opacity-70" strokeWidth={2} />
 										<span>{problem.reviewCount ?? 0} Reviews</span>
 									</div>
+                                    {retrievability !== null && (
+                                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400/90 font-bold" title="Memory Retrievability">
+                                            <Activity className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                            <span>{retrievability}% Mem</span>
+                                        </div>
+                                    )}
 								</div>
 								
 								{/* Left side aligned Badges for mobile, or if compressed */}

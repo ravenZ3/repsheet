@@ -6,9 +6,10 @@ import rehypeClassNames from "rehype-class-names"
 import rehypeHighlight from "rehype-highlight"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, XIcon, LayoutPanelLeft, SaveIcon } from "lucide-react"
+import { Loader2, XIcon, LayoutPanelLeft, SaveIcon, Activity } from "lucide-react"
 import { toast } from "sonner"
 import type { Problem } from "@prisma/client"
+import { ResponsiveContainer, LineChart, Line, YAxis, Tooltip } from "recharts"
 
 interface ProblemDetailPanelProps {
 	problem: Problem
@@ -61,6 +62,31 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
 		setEditNotes(problem.notes || "")
 		setEditMistakes(problem.mistakesMade || "")
 	}, [problem.notes, problem.mistakesMade, problem.id])
+
+    const getRetrievability = (lastReview: Date, stability: number) => {
+        const elapsedDays = (new Date().getTime() - new Date(lastReview).getTime()) / (1000 * 60 * 60 * 24);
+        return Math.round(Math.pow(1 + elapsedDays / (9 * stability), -1) * 100);
+    }
+
+	const getCurveData = () => {
+		if (!problem.lastReview || !problem.stability) return [];
+		const data = [];
+		const lastRevTime = new Date(problem.lastReview).getTime();
+		const nowTime = new Date().getTime();
+		const daysSinceReview = (nowTime - lastRevTime) / (1000 * 60 * 60 * 24);
+		
+		for (let i = 0; i <= 30; i += 2) {
+			const t = daysSinceReview + i;
+			const r = Math.pow(1 + t / (9 * problem.stability), -1);
+			data.push({
+				day: `Day ${Math.floor(t)}`,
+				retention: Math.round(r * 100)
+			});
+		}
+		return data;
+	}
+    
+    const curveData = getCurveData();
 
 	const handleSaveNotes = async () => {
 		setSavingNotes(true)
@@ -120,6 +146,56 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
             <div className="flex-1 overflow-auto p-5 md:p-6 pb-24">
                 {notesMode === "view" ? (
                     <div className="flex flex-col gap-10">
+                        {problem.stability !== null && problem.lastReview && (
+                            <div className="bg-[#111] border border-white/[0.05] rounded-xl p-5 shadow-lg flex flex-col gap-4">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-semibold text-[13px] text-gray-400 dark:text-[#888] tracking-wide flex items-center gap-2">
+                                        <Activity className="w-4 h-4 text-emerald-400" /> Exact Memory Probability
+                                    </h3>
+                                    <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+                                        {getRetrievability(problem.lastReview, problem.stability)}%
+                                    </span>
+                                </div>
+                                <div className="h-1.5 w-full bg-white/[0.05] rounded-full overflow-hidden">
+                                     <div 
+                                        className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-1000 ease-out" 
+                                        style={{ width: `${getRetrievability(problem.lastReview, problem.stability)}%` }} 
+                                     />
+                                </div>
+                                <div className="flex justify-between text-[11px] text-[#555] font-semibold tracking-wider">
+                                    <span>{getRetrievability(problem.lastReview, problem.stability)}% RETAINED</span>
+                                    <span>STABILITY: {problem.stability.toFixed(2)}</span>
+                                </div>
+                                <div className="h-[100px] w-full mt-4 border-t border-white/[0.03] pt-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={curveData}>
+                                            <YAxis domain={[0, 100]} hide />
+                                            <Tooltip 
+                                                cursor={{ stroke: 'rgba(255,255,255,0.1)' }}
+                                                contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
+                                                itemStyle={{ color: '#10b981' }}
+                                                labelStyle={{ color: '#888' }}
+                                                formatter={(val: number) => [`${val}%`, 'Retention']}
+                                            />
+                                            <Line 
+                                                type="monotone" 
+                                                dataKey="retention" 
+                                                stroke="#3b82f6" 
+                                                strokeWidth={3} 
+                                                dot={false} 
+                                                activeDot={{ r: 5, fill: '#10b981', stroke: '#111', strokeWidth: 2 }} 
+                                                animationDuration={1500}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex justify-between text-[10px] text-[#444] uppercase tracking-widest font-semibold">
+                                    <span>Today</span>
+                                    <span>+30 Days</span>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-3">
                             <h3 className="font-semibold text-[13px] text-gray-400 dark:text-[#888] tracking-wide flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.4)]" /> Documentation

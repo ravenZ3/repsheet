@@ -27,7 +27,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
 	const problems = await prisma.problem.findMany({
 		where: baseWhere,
-		select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true, category: true },
+		select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true, category: true, fsrsState: true },
 	})
 
 	const now = new Date();
@@ -55,7 +55,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 		reviewedToday: reviewedToday,
 		backlog: backlog,
 		daysToClear: daysToClear,
-        limit: limit
+        limit: limit,
+        relearningCount: problems.filter(p => p.fsrsState === 3).length
 	};
 
 	const countBy = (key: "difficulty") => {

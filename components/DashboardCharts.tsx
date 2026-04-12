@@ -32,6 +32,7 @@ export type ProgressData = {
 	backlog: number
 	daysToClear: number
     limit: number
+    relearningCount: number
 }
 
 interface TooltipPayload {

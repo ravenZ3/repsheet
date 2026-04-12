@@ -9,11 +9,12 @@ import { redirect } from 'next/navigation';
 
 // REMOVE: const prisma = new PrismaClient()
 
-export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ topic?: string }> }) {
+export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ topic?: string, state?: string }> }) {
   const today = new Date();
   
   const resolvedParams = await searchParams;
   const topicFilter = resolvedParams.topic;
+  const stateFilter = resolvedParams.state;
 
   // --- STEP 2: Get the user's session securely ---
   const session = await getServerSession(authOptions);
@@ -52,18 +53,18 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     totalDue = await prisma.problem.count({
         where: {
             userId: session.user.id,
-            ...(topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
+            ...(stateFilter === 'relearning' ? { fsrsState: 3 } : topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
         }
     });
 
-    problems = remainingQuota > 0 || topicFilter ? await prisma.problem.findMany({
+    problems = remainingQuota > 0 || topicFilter || stateFilter === 'relearning' ? await prisma.problem.findMany({
         where: {
           userId: session.user.id,
-          // If filtering by topic, bypass the strict FSRS nextReviewDate timeline restriction
-          ...(topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
+          // If filtering by topic or relearning state, bypass the strict FSRS nextReviewDate timeline restriction
+          ...(stateFilter === 'relearning' ? { fsrsState: 3 } : topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
         },
-        orderBy: topicFilter ? { lastReview: 'asc' } : { nextReviewDate: 'asc' },
-        take: topicFilter ? 50 : remainingQuota // Pull up to 50 items for focused practice mode
+        orderBy: (topicFilter || stateFilter === 'relearning') ? { lastReview: 'asc' } : { nextReviewDate: 'asc' },
+        take: (topicFilter || stateFilter === 'relearning') ? 50 : remainingQuota // Pull up to 50 items for focused practice mode
       }) : [];
   } catch (err) {
     console.error('[REVIEW_PAGE_ERROR]', err);

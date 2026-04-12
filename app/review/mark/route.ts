@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       data: {
         stability: updatedCardInfo.card.stability,
         fsrsDifficulty: updatedCardInfo.card.difficulty,
+        fsrsState: updatedCardInfo.card.state,
         lastRating: rating,
         lastReview: now,
         reviewCount: { increment: 1 },
