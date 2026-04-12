@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true },
+      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, fsrsTargetRetention: true },
     });
 
     if (!user) {
@@ -34,9 +34,12 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle } = body;
+    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle, fsrsTargetRetention } = body;
 
     const updateData: Record<string, unknown> = {};
+    if (typeof fsrsTargetRetention === 'number' && fsrsTargetRetention >= 0.70 && fsrsTargetRetention <= 0.99) {
+        updateData.fsrsTargetRetention = fsrsTargetRetention;
+    }
     if (typeof dailyReviewLimit === 'number' && dailyReviewLimit >= 1) {
         updateData.dailyReviewLimit = dailyReviewLimit;
     }

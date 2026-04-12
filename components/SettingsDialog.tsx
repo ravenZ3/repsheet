@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 export default function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(20);
+  const [targetRetention, setTargetRetention] = useState(0.90);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [leetcodeUsername, setLeetcodeUsername] = useState("");
@@ -34,6 +35,7 @@ export default function SettingsDialog() {
         .then((res) => res.json())
         .then((data) => {
           if (data.dailyReviewLimit) setLimit(data.dailyReviewLimit);
+          if (data.fsrsTargetRetention) setTargetRetention(data.fsrsTargetRetention);
           if (data.leetcodeUsername) {
             setLeetcodeUsername(data.leetcodeUsername);
             setOriginalUsername(data.leetcodeUsername);
@@ -56,7 +58,7 @@ export default function SettingsDialog() {
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dailyReviewLimit: Number(limit), leetcodeUsername: leetcodeUsername.trim() }),
+        body: JSON.stringify({ dailyReviewLimit: Number(limit), leetcodeUsername: leetcodeUsername.trim(), fsrsTargetRetention: targetRetention }),
       });
       if (!res.ok) throw new Error('Failed to save settings');
       toast.success('Settings saved successfully');
@@ -110,7 +112,7 @@ export default function SettingsDialog() {
       
       toast.success(`Success! Synced ${totalSynced} new problems. ${totalSkipped} skipped.`);
       setTimeout(() => window.location.reload(), 1500);
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || 'Sync failed');
     } finally {
       setSyncing(false);
@@ -170,7 +172,38 @@ export default function SettingsDialog() {
             )}
           </div>
 
-            <div className="w-full h-[1px] bg-gray-100 dark:bg-white/[0.06] my-6" />
+            <div className="w-full h-[1px] bg-gray-100 dark:bg-white/[0.06] my-2" />
+            <div className="flex flex-col items-center justify-center space-y-4 px-2 py-2">
+                <div className="text-center">
+                    <label className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block">
+                      Target Retention
+                    </label>
+                    <p className="text-[12px] text-gray-500 dark:text-[#555] mt-1 max-w-[280px] mx-auto leading-relaxed">
+                      Controls FSRS algorithm aggression. High retention pushes more daily reviews.
+                    </p>
+                </div>
+                <div className="w-full max-w-[240px] mt-2">
+                    <div className="flex justify-between text-[11px] font-medium text-gray-400 dark:text-[#666] mb-2 px-1">
+                        <span>Maintenance<br/>(80%)</span>
+                        <span className="text-center ml-2">Default<br/>(90%)</span>
+                        <span className="text-right">Exam Mode<br/>(96%)</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="0.75" 
+                        max="0.99" 
+                        step="0.01" 
+                        value={targetRetention}
+                        onChange={(e) => setTargetRetention(parseFloat(e.target.value))}
+                        className="w-full h-1.5 bg-gray-200 dark:bg-white/[0.1] rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400 transition-all"
+                    />
+                    <div className="text-center mt-3 font-semibold text-[15px] text-gray-900 dark:text-white">
+                        {Math.round(targetRetention * 100)}%
+                    </div>
+                </div>
+            </div>
+
+            <div className="w-full h-[1px] bg-gray-100 dark:bg-white/[0.06] my-4" />
             <div className="w-full px-6 flex flex-col items-center">
                 <label className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block mb-3 text-center">
                   Platform Integrations

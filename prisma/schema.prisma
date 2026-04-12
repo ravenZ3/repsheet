@@ -46,6 +46,7 @@ model User {
   leetcodeLastSyncDate DateTime?
   codeforcesHandle String?
   codeforcesLastSyncId Int?
+  fsrsTargetRetention Float @default(0.90)
   accounts         Account[]
   sessions         Session[]
   problems         Problem[]

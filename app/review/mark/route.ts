@@ -8,7 +8,6 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 
 // REMOVE: const prisma = new PrismaClient()
-const fsrs = new FSRS();
 
 export async function POST(req: NextRequest) {
   // --- STEP 2: Authenticate the user ---
@@ -42,11 +41,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const userSettings = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { fsrsTargetRetention: true }
+    });
+
     if (!problem) {
       return NextResponse.json({ error: 'Problem not found or you do not have permission' }, { status: 404 });
     }
 
     // --- Your FSRS logic is great, no changes needed here ---
+    const fsrs = new FSRS();
+    if (userSettings?.fsrsTargetRetention) {
+        fsrs.p.request_retention = userSettings.fsrsTargetRetention;
+    }
+
     const now = new Date();
     const card = new Card();
     card.due = problem.nextReviewDate ?? now;
