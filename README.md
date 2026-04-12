@@ -1,17 +1,20 @@
 # 🧠 Repsheet – Track. Retain. Repeat.
 
-Repsheet is a spaced repetition tool tailored for coding problem-solving. It began as a simple Excel sheet used to log and review problems and evolved into a full-stack application built with Next.js, MongoDB, Prisma, and the FSRS (Free Spaced Repetition Scheduler) algorithm.
+Repsheet is a **Spaced Repetition tracking platform** specifically engineered for Competitive Programming and Data Structures & Algorithms. It maps the state-of-the-art **FSRS** (Free Spaced Repetition Scheduler) algorithm to your coding journey to guarantee you never forget an algorithmic pattern again.
 
 ---
 
-##  Features
+## 🔥 Modern Features
 
--  FSRS-based review scheduling
--  Track solved problems
--  View upcoming reviews
--  OAuth login with Google & GitHub
--  MongoDB + Prisma for database layer
--  Deployed on Vercel
+Repsheet has evolved beyond a basic manual tracker into a multi-platform Analytics Hub:
+
+- **Automated Handshake Syncing**: Connect your **LeetCode** and **Codeforces** handles to seamlessly sync your recently solved problems directly into the FSRS pipeline.
+- **Incremental Polling**: Intelligently polls Codeforces and LeetCode APIs to prevent data duplication.
+- **Painless Progress Tracking**: Track your current Elo rating distribution, review backlogs, and problem difficulties using dynamic heatmaps and histograms.
+- **Platform Agnostic Styling**: Dynamic dashboard morphing shifts terminology and branding depending on the platform you choose to filter by (LeetCode vs Codeforces vs All).
+- **Upcoming Tournaments Widget**: Live, real-time widget pulling upcoming Codeforces tournaments directly to your dashboard to trigger daily retention hooks.
+- **FSRS-based Review Scheduling**: Spaced repetition algorithm to optimally space your problem reviews.
+- **Secure Architecture**: Built with Next.js App Router, Prisma, MongoDB, and NextAuth (OAuth).
 
 ---
 
@@ -20,17 +23,19 @@ Repsheet is a spaced repetition tool tailored for coding problem-solving. It beg
 We started with an **Excel sheet** — just columns for problem names, links, and review dates. Manually updating review intervals became unsustainable. So we built Repsheet:
 
 - **To automate review intervals using FSRS**
-- **To track progress painlessly**
-- **To make retention effortless**
+- **To sync with external platforms (Codeforces/LeetCode)**
+- **To track progress effortlessly through rich data analytics**
+- **To make algorithmic retention effortless**
 
 ---
 
 ## 🧱 Tech Stack
 
-- **Frontend**: Next.js (App Router)
-- **Backend**: API Routes + NextAuth.js
+- **Frontend**: Next.js (App Router), TailwindCSS, Recharts
+- **Backend**: Next.js Serverless API Routes + NextAuth.js
 - **Database**: MongoDB via Prisma ORM
 - **Authentication**: GitHub & Google OAuth
+- **Data Layers**: Local caching + Server-side rendering pipelines
 - **Deployment**: Vercel
 
 ---
@@ -51,7 +56,7 @@ This lets you focus on what you *haven’t* mastered, instead of reviewing every
 ## 🚀 Getting Started
 
 ```bash
-git clone https://github.com/your-username/repsheet.git
+git clone https://github.com/ravenZ3/repsheet.git
 cd repsheet
 pnpm install
 cp .env.example .env
