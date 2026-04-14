@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 
 const LEETCODE_API_ENDPOINT = "https://leetcode.com/graphql";
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

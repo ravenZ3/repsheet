@@ -216,7 +216,7 @@ export default function AddProblemPage() {
   }, [form.problemId])
 
   const handleChange = useCallback(
-    (name: keyof FormState, value: string) => {
+    (name: keyof FormState, value: string | boolean) => {
       setForm((prev) => ({ ...prev, [name]: value }))
       setErrors((prev) => ({ ...prev, [name]: undefined }))
       if (name === "problemId") setFetchStatus("idle")
@@ -461,7 +461,7 @@ export default function AddProblemPage() {
         <div className="mt-4 mb-3 pt-2">
           <button
             type="button"
-            onClick={() => handleChange("isStuck" as unknown as keyof FormState, !form.isStuck as unknown as string)}
+            onClick={() => handleChange("isStuck", !form.isStuck)}
             className={`w-full flex justify-center tracking-wide py-2 rounded-lg font-medium text-[13px] transition-all duration-200 border ${
               form.isStuck
                 ? "bg-red-500/10 dark:bg-rose-500/[0.05] text-red-600 dark:text-rose-400 border-red-500/30 dark:border-rose-500/20 shadow-sm"

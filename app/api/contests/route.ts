@@ -1,6 +1,6 @@
-import { NextResponse, NextRequest } from "next/server"
+import { NextResponse } from "next/server"
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
 	try {
         // Cache revalidation 3600 seconds (1 hour). Codeforces schedules shift slowly.
 		const res = await fetch("https://codeforces.com/api/contest.list", {
