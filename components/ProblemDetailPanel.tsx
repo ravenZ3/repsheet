@@ -18,24 +18,24 @@ interface ProblemDetailPanelProps {
 }
 
 const classNames = {
-    h1: "text-xl font-bold mb-3",
-    h2: "text-lg font-semibold mb-2",
-    h3: "text-base font-semibold mb-2",
-    p: "mb-2 text-sm leading-relaxed",
-    ul: "list-disc pl-4 mb-2 space-y-1",
-    ol: "list-decimal pl-4 mb-2 space-y-1",
-    li: "text-sm text-gray-700 dark:text-gray-300",
-    code: "bg-muted/30 px-1 py-0.5 rounded text-sm font-mono",
-    pre: "bg-gray-100 dark:bg-[#1e293b] border dark:border-gray-800 p-4 rounded-lg text-xs font-mono overflow-x-auto mb-4",
-    blockquote: "border-l-4 border-gray-300 dark:border-[#1e293b] pl-4 italic mb-2 text-gray-600 dark:text-gray-400",
+    h1: "text-2xl font-bold mb-4",
+    h2: "text-xl font-semibold mb-3",
+    h3: "text-lg font-semibold mb-2",
+    p: "mb-3 text-base leading-relaxed text-gray-800 dark:text-[rgba(255,255,255,0.85)]",
+    ul: "list-disc pl-5 mb-3 space-y-2",
+    ol: "list-decimal pl-5 mb-3 space-y-2",
+    li: "text-base text-gray-800 dark:text-[rgba(255,255,255,0.85)]",
+    code: "bg-muted/40 px-1.5 py-0.5 rounded text-sm font-mono",
+    pre: "bg-gray-100 dark:bg-[#0f172a] border dark:border-white/[0.05] p-5 rounded-xl text-[13px] font-mono overflow-x-auto mb-5",
+    blockquote: "border-l-4 border-gray-300 dark:border-white/[0.1] pl-4 italic mb-3 text-gray-600 dark:text-gray-400",
     strong: "font-semibold text-gray-900 dark:text-white",
     em: "italic",
     del: "line-through",
-    table: "w-full border-collapse border border-gray-200 dark:border-gray-800 mb-4 text-sm",
-    thead: "bg-gray-50 dark:bg-gray-900",
-    tr: "border-b border-gray-200 dark:border-gray-800",
-    th: "border border-gray-200 dark:border-gray-800 p-2 text-left font-semibold",
-    td: "border border-gray-200 dark:border-gray-800 p-2",
+    table: "w-full border-collapse border border-gray-200 dark:border-white/[0.08] mb-4 text-sm",
+    thead: "bg-gray-50 dark:bg-white/[0.03]",
+    tr: "border-b border-gray-200 dark:border-white/[0.08]",
+    th: "border border-gray-200 dark:border-white/[0.08] p-2 text-left font-semibold",
+    td: "border border-gray-200 dark:border-white/[0.08] p-2",
 }
 
 const MarkdownContent = ({ content }: { content: string | null }) => (
@@ -112,97 +112,102 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
     }
 
     return (
-        <div className="flex flex-col h-full w-full bg-white dark:bg-[#151515] relative text-[13px]">
+        <div className="flex flex-col h-full w-full bg-white dark:bg-[#0a0a0a] relative text-[14px]">
             {/* Header Sticky Strip */}
-            <div className="sticky top-0 z-10 flex-shrink-0 p-5 md:p-6 border-b border-gray-100 dark:border-white/[0.08] flex flex-row items-center justify-between dark:bg-[#1a1a1a] bg-white/80 dark:backdrop-blur-none backdrop-blur-3xl">
+            <div className="sticky top-0 z-10 flex-shrink-0 p-5 md:p-6 border-b border-gray-100 dark:border-white/[0.05] flex flex-row items-center justify-between dark:bg-[#0a0a0a]/80 bg-white/80 backdrop-blur-xl">
                 <div className="flex items-center gap-3">
-                    <LayoutPanelLeft className="w-4 h-4 text-gray-400 dark:text-[#888]" strokeWidth={2} />
-                    <h2 className="text-base font-medium text-gray-900 dark:text-[rgba(255,255,255,0.9)] tracking-tight m-0 line-clamp-1">
+                    <LayoutPanelLeft className="w-4 h-4 text-gray-400 dark:text-[#666]" strokeWidth={2} />
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight m-0 line-clamp-1">
                         {problem.name}
                     </h2>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="flex bg-gray-100 dark:bg-white/[0.04] rounded-lg p-0.5 border border-transparent dark:border-white/[0.04]">
+                    <div className="flex bg-gray-100 dark:bg-white/[0.05] rounded-xl p-1 border border-transparent dark:border-white/[0.05]">
                         <button
-                            className={`px-4 py-1.5 text-[12px] font-medium rounded-md transition-all ${notesMode === 'view' ? 'bg-white dark:bg-white/[0.08] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#888] hover:text-gray-700 dark:hover:text-[rgba(255,255,255,0.9)]'}`}
+                            className={`px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-lg transition-all ${notesMode === 'view' ? 'bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#666] hover:text-gray-700 dark:hover:text-white'}`}
                             onClick={() => setNotesMode('view')}
                         >
                             Preview
                         </button>
                         <button
-                            className={`px-4 py-1.5 text-[12px] font-medium rounded-md transition-all ${notesMode === 'edit' ? 'bg-white dark:bg-white/[0.08] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#888] hover:text-gray-700 dark:hover:text-[rgba(255,255,255,0.9)]'}`}
+                            className={`px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-lg transition-all ${notesMode === 'edit' ? 'bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#666] hover:text-gray-700 dark:hover:text-white'}`}
                             onClick={() => setNotesMode('edit')}
                         >
                             Edit
                         </button>
                     </div>
-                    <button onClick={onClose} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-white/[0.1] text-gray-400 dark:text-[#888] transition-colors">
-                        <XIcon className="w-4 h-4" strokeWidth={2} />
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/[0.1] text-gray-400 dark:text-[#666] transition-colors">
+                        <XIcon className="w-5 h-5" strokeWidth={2} />
                     </button>
                 </div>
             </div>
 
             {/* Scrollable Content Body */}
-            <div className="flex-1 overflow-auto p-5 md:p-6 pb-24">
+            <div className="flex-1 overflow-auto p-6 md:p-10 pb-32">
                 {notesMode === "view" ? (
-                    <div className="flex flex-col gap-6">
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-[13px] text-gray-400 dark:text-[#888] tracking-wide flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.4)]" /> Documentation
+                    <div className="max-w-3xl mx-auto flex flex-col gap-10">
+                        <section className="space-y-4">
+                            <h3 className="font-bold text-[14px] text-gray-400 dark:text-[#555] tracking-[0.2em] uppercase flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-blue-500/40" /> Documentation
                             </h3>
-                            <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none text-gray-700 dark:text-[rgba(255,255,255,0.7)] p-2">
+                            <div className="pl-5 border-l-2 border-gray-100 dark:border-white/[0.03]">
                                 <MarkdownContent content={editNotes} />
                             </div>
-                        </div>
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-[13px] text-gray-400 dark:text-[#888] tracking-wide flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500/60" /> Mistakes Made
+                        </section>
+
+                        <section className="space-y-4">
+                            <h3 className="font-bold text-[14px] text-gray-400 dark:text-[#555] tracking-[0.2em] uppercase flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full bg-rose-500/40" /> Mistakes Made
                             </h3>
-                            <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-red-900 dark:text-rose-100/70 p-2">
+                            <div className="pl-5 border-l-2 border-gray-100 dark:border-white/[0.03]">
                                 <MarkdownContent content={editMistakes} />
                             </div>
-                        </div>
+                        </section>
 
                         {problem.stability !== null && problem.lastReview && (
-                            <div className="bg-[#111] border border-white/[0.05] rounded-xl p-4 shadow-md flex flex-col gap-3">
-                                <div className="flex justify-between items-center">
-                                    <h3 className="font-semibold text-[12px] text-gray-400 dark:text-[#888] tracking-wide flex items-center gap-2">
-                                        <Activity className="w-3.5 h-3.5 text-emerald-400" /> Exact Memory Probability
-                                    </h3>
-                                    <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-                                        {getRetrievability(problem.lastReview, problem.stability)}%
-                                    </span>
-                                </div>
-                                <div className="flex justify-between items-center text-[10px] text-[#555] font-semibold tracking-wider">
-                                    <span>{getRetrievability(problem.lastReview, problem.stability)}% RETAINED</span>
-                                    <span>STABILITY: {problem.stability.toFixed(2)}</span>
-                                </div>
-                                <div className="h-[40px] w-full mt-2 border-t border-white/[0.03] pt-2">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={curveData}>
-                                            <YAxis domain={[0, 100]} hide />
-                                            <Tooltip
-                                                cursor={{ stroke: 'rgba(255,255,255,0.1)' }}
-                                                contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
-                                                itemStyle={{ color: '#10b981' }}
-                                                labelStyle={{ color: '#888' }}
-                                                formatter={(val: number) => [`${val}%`, 'Retention']}
-                                            />
-                                            <Line
-                                                type="monotone"
-                                                dataKey="retention"
-                                                stroke="#3b82f6"
-                                                strokeWidth={2}
-                                                dot={false}
-                                                activeDot={{ r: 4, fill: '#10b981', stroke: '#111', strokeWidth: 2 }}
-                                                animationDuration={1500}
-                                            />
-                                        </LineChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <div className="flex justify-between text-[9px] text-[#444] uppercase tracking-widest font-semibold">
-                                    <span>Today</span>
-                                    <span>+30 Days</span>
+                            <div className="mt-8 pt-10 border-t border-gray-100 dark:border-white/[0.05]">
+                                <div className="bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/[0.05] rounded-3xl p-6 shadow-sm flex flex-col gap-6">
+                                    <div className="flex justify-between items-end">
+                                        <div className="space-y-1">
+                                            <h3 className="font-bold text-[11px] text-gray-400 dark:text-[#555] tracking-widest uppercase flex items-center gap-2">
+                                                <Activity className="w-3.5 h-3.5 text-blue-500" /> Retention Curve
+                                            </h3>
+                                            <p className="text-[11px] text-[#888] font-medium tracking-wide">STABILITY: {problem.stability.toFixed(2)} DAYS</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-4xl font-light tracking-tighter text-gray-900 dark:text-white">
+                                                {getRetrievability(problem.lastReview, problem.stability)}%
+                                            </span>
+                                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">Probability</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="h-[60px] w-full bg-white/50 dark:bg-black/20 rounded-2xl p-4 border border-transparent dark:border-white/[0.02]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <LineChart data={curveData}>
+                                                <YAxis domain={[0, 100]} hide />
+                                                <Tooltip
+                                                    cursor={{ stroke: 'rgba(255,255,255,0.05)' }}
+                                                    contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
+                                                    itemStyle={{ color: '#3b82f6' }}
+                                                    labelStyle={{ display: 'none' }}
+                                                    formatter={(val: number) => [`${val}%`, 'Retention']}
+                                                />
+                                                <Line
+                                                    type="monotone"
+                                                    dataKey="retention"
+                                                    stroke="#3b82f6"
+                                                    strokeWidth={2.5}
+                                                    dot={false}
+                                                    activeDot={{ r: 4, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                                                />
+                                            </LineChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] text-[#888] font-bold uppercase tracking-widest px-2">
+                                        <span>Today</span>
+                                        <span>+30 Days</span>
+                                    </div>
                                 </div>
                             </div>
                         )}
