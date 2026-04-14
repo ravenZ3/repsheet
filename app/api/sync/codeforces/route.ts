@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -115,6 +115,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error("Codeforces Sync error:", error);
-    return NextResponse.json({ error: error.message || "Codeforces Sync pipeline failed" }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message || "Codeforces Sync pipeline failed" }, { status: 500 });
   }
 }

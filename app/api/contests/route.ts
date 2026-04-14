@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server"
+import { NextResponse, NextRequest } from "next/server"
 
-export async function GET() {
+export async function GET(_request: NextRequest) {
 	try {
         // Cache revalidation 3600 seconds (1 hour). Codeforces schedules shift slowly.
 		const res = await fetch("https://codeforces.com/api/contest.list", {
@@ -10,13 +10,13 @@ export async function GET() {
 
 		if (data.status === "OK") {
 			const upcoming = data.result
-				.filter((c: any) => c.phase === "BEFORE")
-				.sort((a: any, b: any) => a.startTimeSeconds - b.startTimeSeconds)
+				.filter((c: { phase: string }) => c.phase === "BEFORE")
+				.sort((a: { startTimeSeconds: number }, b: { startTimeSeconds: number }) => a.startTimeSeconds - b.startTimeSeconds)
 				.slice(0, 5)
 			return NextResponse.json({ status: "OK", result: upcoming })
 		}
 		return NextResponse.json({ status: "FAILED" }, { status: 500 })
-	} catch (error) {
+	} catch {
 		return NextResponse.json(
 			{ status: "ERROR", message: "Failed to fetch contests" },
 			{ status: 500 }

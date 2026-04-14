@@ -5,11 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { Loader2, MenuIcon, X } from 'lucide-react'; // Import Menu and X icons
-import rehypeHighlight from "rehype-highlight"
 import SettingsDialog from './SettingsDialog';
 export default function Navbar() {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false); // State to manage the mobile menu
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);

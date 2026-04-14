@@ -21,7 +21,6 @@ import {
 	AlertCircle,
 	Loader2,
 	Settings,
-	X,
 } from "lucide-react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -254,11 +253,6 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		})
 		setError(null)
 	}, [problem])
-
-	const formatLastSaved = useCallback((date: Date) => {
-		// ... (your formatting logic is good)
-		return `Saved at ${date.toLocaleTimeString()}`
-	}, [])
 
 	// --- Autosave Effect with Cleanup ---
 	useEffect(() => {

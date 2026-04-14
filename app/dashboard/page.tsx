@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import prisma from "@/lib/prisma"
 import { format } from "date-fns"
 import { getServerSession } from "next-auth/next"
@@ -20,7 +21,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 	})
 	const limit = user?.dailyReviewLimit || 20;
 
-    const baseWhere: any = { userId: session.user.id };
+    const baseWhere: Prisma.ProblemWhereInput = { userId: session.user.id };
     if (platformFilter && platformFilter !== 'All') {
         baseWhere.platform = platformFilter;
     }
@@ -89,8 +90,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             }
         }
         return Object.entries(skillsMap)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count);
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
     };
 
     const stuckCount = problems.filter(p => p.isStuck).length;

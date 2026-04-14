@@ -362,7 +362,7 @@ export default function EditPage() {
         } else {
           setError('Problem not found')
         }
-      } catch (err) {
+      } catch {
         setError('Failed to load problem')
       } finally {
         setLoading(false)

@@ -14,7 +14,6 @@ interface ReviewPageContentProps {
 	problems: Problem[]
 	reviewedToday: number
     backlog: number
-    daysToClear: number
 	error: string | null
     topicFocus?: string
 }
@@ -23,7 +22,6 @@ export default function ReviewPageContent({
 	problems: initialProblems,
 	reviewedToday: initialReviewedToday,
     backlog,
-    daysToClear,
 	error,
     topicFocus,
 }: ReviewPageContentProps) {

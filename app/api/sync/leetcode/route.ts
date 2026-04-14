@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 
 const LEETCODE_API_ENDPOINT = "https://leetcode.com/graphql";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -124,6 +124,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error("Sync error:", error);
-    return NextResponse.json({ error: error.message || "Sync pipeline failed" }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message || "Sync pipeline failed" }, { status: 500 });
   }
 }

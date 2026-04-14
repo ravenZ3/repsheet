@@ -50,8 +50,14 @@ interface TooltipProps {
 	label?: string
 }
 
+interface Contest {
+    id: number | string;
+    name: string;
+    startTimeSeconds: number;
+}
+
 function UpcomingContests() {
-    const [contests, setContests] = useState<any[]>([])
+    const [contests, setContests] = useState<Contest[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -108,8 +114,6 @@ function SkillsMastery({ skills }: { skills?: ChartData }) {
     const [expanded, setExpanded] = useState(false);
     const router = useRouter();
 
-    if (!skills || skills.length === 0) return null;
-
     // Advanced heuristics (very naive mapping, but works for CP aesthetics)
     // In a real app we'd map via dictionary or static sets.
     const getSkillTier = (name: string) => {
@@ -121,11 +125,14 @@ function SkillsMastery({ skills }: { skills?: ChartData }) {
 
     const groupedSkills = useMemo(() => {
         const groups: Record<string, ChartData> = { Advanced: [], Intermediate: [], Fundamental: [] };
+        if (!skills) return groups;
         skills.forEach(s => {
             groups[getSkillTier(s.name)].push(s);
         });
         return groups;
     }, [skills]);
+
+    if (!skills || skills.length === 0) return null;
 
     const renderGroup = (title: string, groupSkills: ChartData, maxDisplay: number, colorClass: string) => {
         if (groupSkills.length === 0) return null;
@@ -200,27 +207,10 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 		activityPage * ACTIVITY_ITEMS_PER_PAGE
 	)
 
-	const STATUS_COLORS: { [key: string]: string } = {
-		Solved: "#10b981",
-		Attempted: "#fbbf24",
-		Todo: "#ef4444",
-		"In Progress": "#3b82f6",
-		Review: "#8b5cf6",
-	}
-
 	const DIFFICULTY_COLORS: { [key: string]: string } = {
 		Easy: "#34d399",
 		Medium: "#818cf8",
 		Hard: "#c084fc",
-	}
-
-	const getStatusColor = (name: string, index: number) => {
-		return (
-			STATUS_COLORS[name] ||
-			Object.values(STATUS_COLORS)[
-				index % Object.values(STATUS_COLORS).length
-			]
-		)
 	}
 
 	const getDifficultyColor = (name: string) => {

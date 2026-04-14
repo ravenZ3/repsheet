@@ -66,7 +66,7 @@ export default function SettingsDialog() {
       
       // Since dashboard relies on Server Components natively fetching data, we reload to sync UI metric widget.
       window.location.reload(); 
-    } catch (err) {
+    } catch {
       toast.error('Failed to save settings');
     } finally {
       setSaving(false);
@@ -112,8 +112,8 @@ export default function SettingsDialog() {
       
       toast.success(`Success! Synced ${totalSynced} new problems. ${totalSkipped} skipped.`);
       setTimeout(() => window.location.reload(), 1500);
-    } catch (err: any) {
-      toast.error(err.message || 'Sync failed');
+    } catch (err) {
+      toast.error((err as Error).message || 'Sync failed');
     } finally {
       setSyncing(false);
     }

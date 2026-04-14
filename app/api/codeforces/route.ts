@@ -82,6 +82,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error("API Error fetching Codeforces data:", error);
-    return NextResponse.json({ success: false, error: error.message || "An unknown error occurred" }, { status: 500 });
+    return NextResponse.json({ success: false, error: (error as Error).message || "An unknown error occurred" }, { status: 500 });
   }
 }

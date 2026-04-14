@@ -73,14 +73,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
   const cappedDue = Math.min(totalDue, limit > 0 ? limit : totalDue);
   const backlog = Math.max(0, totalDue - cappedDue);
-  const daysToClear = limit > 0 && backlog > 0 ? Math.ceil(backlog / limit) : 0;
 
   return (
     <ReviewPageContent
       problems={problems}
       reviewedToday={reviewedToday}
       backlog={backlog}
-      daysToClear={daysToClear}
       error={error}
       topicFocus={topicFilter}
     />

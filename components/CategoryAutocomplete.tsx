@@ -51,7 +51,7 @@ export default function CategoryAutocomplete({
         !alreadyUsed.includes(cat.toLowerCase()) &&
         cat.toLowerCase().includes(lastInput)
     )
-  }, [value])
+  }, [value, lastInput])
 
   const handleSelect = (selected: string) => {
     const parts = value.split(",").map((t) => t.trim())

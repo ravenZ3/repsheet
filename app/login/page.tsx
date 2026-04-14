@@ -61,7 +61,7 @@ export default function LoginPage() {
     setIsSocialLoading(provider)
     try {
       await signIn(provider, { callbackUrl: '/dashboard' })
-    } catch (err) {
+    } catch {
       toast.error(`Failed to sign in with ${provider}`)
       setIsSocialLoading(null)
     }
