@@ -58,15 +58,7 @@ interface FormFieldProps {
   error?: string
 }
 
-interface LeetCodeProblem {
-  questionId: string
-  questionFrontendId: string
-  title: string
-  titleSlug: string
-  difficulty: string
-  topicTags: Array<{ name: string }>
-  content: string
-}
+
 
 // Reusable FormField component
 function FormField({
