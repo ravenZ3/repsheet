@@ -256,13 +256,23 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		setError(null)
 	}, [problem])
 
-	const handleStarToggle = useCallback((e: React.MouseEvent) => {
+	const handleStarToggle = useCallback(async (e: React.MouseEvent) => {
 		e.stopPropagation()
 		const newVal = !isStarred
 		setIsStarred(newVal)
-		saveChanges({ isStarred: newVal })
-		saveChanges.flush()
-	}, [isStarred, saveChanges])
+		try {
+			const res = await fetch(`/api/problem/${problem.id}`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ isStarred: newVal }),
+			})
+			if (!res.ok) throw new Error(await res.text())
+			onUpdate?.(problem.id, await res.json())
+		} catch {
+			setIsStarred(!newVal)
+			toast.error("Failed to update star")
+		}
+	}, [isStarred, problem.id, onUpdate])
 
 	// --- Autosave Effect with Cleanup ---
 	useEffect(() => {
