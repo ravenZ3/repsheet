@@ -79,6 +79,7 @@ model Problem {
   link           String?
   difficulty     Difficulty
   isStuck        Boolean   @default(false)
+  isStarred      Boolean   @default(false)
   category       String[]
   notes          String?
   mistakesMade   String?
