@@ -75,6 +75,7 @@ export async function PATCH(
     if (body.mistakesMade !== undefined) updateData.mistakesMade = body.mistakesMade;
     if (body.difficulty !== undefined) updateData.difficulty = body.difficulty;
     if (body.isStuck !== undefined) updateData.isStuck = body.isStuck;
+    if (body.isStarred !== undefined) updateData.isStarred = body.isStarred;
     if (body.category !== undefined) updateData.category = body.category;
     const updateResult = await prisma.problem.updateMany({
       where: {

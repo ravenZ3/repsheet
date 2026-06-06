@@ -127,12 +127,12 @@ export default function SettingsDialog() {
           <span className="md:hidden">Global Settings</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-white dark:bg-[#111] border border-gray-200 dark:border-white/[0.08] shadow-2xl overflow-hidden [&>button:first-of-type]:hidden p-0 gap-0">
+      <DialogContent className="sm:max-w-md bg-white dark:bg-[#111] border border-gray-200 dark:border-white/[0.08] shadow-2xl overflow-hidden [&>button:first-of-type]:hidden p-0 gap-0 max-h-[90vh] flex flex-col">
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay pointer-events-none" />
-        <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-white/[0.06]">
+        <DialogHeader className="p-6 pb-4 border-b border-gray-100 dark:border-white/[0.06] shrink-0">
           <DialogTitle className="text-[15px] font-medium text-gray-900 dark:text-[rgba(255,255,255,0.95)]">Global Settings</DialogTitle>
         </DialogHeader>
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 overflow-y-auto">
           <div className="flex flex-col items-center justify-center space-y-6">
             <div className="text-center">
                 <label className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block">

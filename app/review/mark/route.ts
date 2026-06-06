@@ -94,6 +94,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to update the problem' }, { status: 500 });
     }
 
+    await prisma.review.create({
+      data: {
+        userId: session.user.id,
+        problemId: id,
+        date: now,
+        rating,
+      },
+    })
+
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to mark review';

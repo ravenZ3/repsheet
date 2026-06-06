@@ -50,6 +50,7 @@ model User {
   accounts         Account[]
   sessions         Session[]
   problems         Problem[]
+  reviews          Review[]
 }
 
 model VerificationToken {
@@ -92,4 +93,16 @@ model Problem {
   lastRating     Int?
   lastReview     DateTime?
   platformRating Int?
+  reviews        Review[]
+}
+
+model Review {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  problemId String   @db.ObjectId
+  date      DateTime @default(now())
+  rating    Int
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 }

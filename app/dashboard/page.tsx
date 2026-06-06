@@ -28,7 +28,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
 	const problems = await prisma.problem.findMany({
 		where: baseWhere,
-		select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true, category: true, fsrsState: true },
+		select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true, category: true, fsrsState: true, link: true },
 	})
 
 	const now = new Date();
@@ -102,6 +102,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     ];
 
     const thresholdTime = todayStart.getTime() - 91 * 24 * 60 * 60 * 1000;
+
+    const thresholdDate = new Date(thresholdTime);
+    const reviews = await prisma.review.findMany({
+        where: {
+            userId: session.user.id,
+            date: { gte: thresholdDate },
+        },
+        select: { date: true },
+    })
+
+    const reviewsByDay: Record<string, number> = {}
+    for (const r of reviews) {
+        const key = format(new Date(r.date).getTime(), "yyyy-MM-dd")
+        reviewsByDay[key] = (reviewsByDay[key] || 0) + 1
+    }
+
 	const heatmap = problems.reduce((acc, p) => {
 		if (!p.dateSolved) return acc
         const solvedTime = new Date(p.dateSolved).getTime();
@@ -112,7 +128,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         // PERFORMANCE BOOST: Only push heavy problem metadata payload for the last 90 days.
         // This ensures the generic RSC payload size doesn't trend towards infinity over years.
         if (solvedTime >= thresholdTime) {
-            acc[key].problems.push({ id: p.id, name: p.name, platform: p.platform, difficulty: p.difficulty, platformRating: p.platformRating })
+            acc[key].problems.push({ id: p.id, name: p.name, platform: p.platform, difficulty: p.difficulty, platformRating: p.platformRating, link: p.link })
         }
 		return acc
 	}, {} as Record<string, { count: number, problems: { id: string, name: string, platform: string | null, difficulty: string, platformRating?: number | null }[] }>)
@@ -126,8 +142,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       .map(([date, data]) => ({
 		  date,
 		  count: data.count,
+          reviewCount: reviewsByDay[date] || 0,
           problems: data.problems
 	  }))
+
+    // Add review-only days (days with reviews but no solves)
+    for (const [date, reviewCount] of Object.entries(reviewsByDay)) {
+        if (!heatmapArray.find(h => h.date === date)) {
+            heatmapArray.push({ date, count: 0, reviewCount, problems: [] })
+        }
+    }
 
 	const data = {
 		status: statusData,
@@ -140,7 +164,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 	return (
 		<div className="max-w-7xl mx-auto mt-6 px-4 space-y-6">
 			<div className="flex flex-col md:flex-row md:items-baseline md:justify-between px-2">
-				<h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+				<h1 className="text-3xl italic text-gray-900 dark:text-white [font-family:var(--font-playfair)]">
 					Dashboard
 				</h1>
 				<p className="text-gray-500 dark:text-gray-400 font-medium text-sm mt-1 md:mt-0 tracking-wide">

@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle, Loader2, Calendar, Repeat, Link as LinkIcon, Activity } from "lucide-react"
+import { CheckCircle, Loader2, Calendar, Repeat, Link as LinkIcon, Activity, Star } from "lucide-react"
 import { toast } from "sonner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { Problem } from "@prisma/client"
@@ -20,6 +20,7 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 	const [rating, setRating] = useState<string>("")
 	const [submitting, setSubmitting] = useState(false)
 	const [isVisible, setIsVisible] = useState(true)
+	const [isStarred, setIsStarred] = useState(problem.isStarred)
 
 	const difficultyStyle = useMemo(() => {
 		switch (problem.difficulty) {
@@ -71,6 +72,24 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 		if (!date) return "N/A"
 		return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
 	}
+
+	const handleStarToggle = useCallback(async (e: React.MouseEvent) => {
+		e.stopPropagation()
+		const newVal = !isStarred
+		setIsStarred(newVal)
+		try {
+			const res = await fetch(`/api/problem/${problem.id}`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ isStarred: newVal }),
+			})
+			if (!res.ok) throw new Error(await res.text())
+			onUpdate?.(problem.id, await res.json(), false)
+		} catch {
+			setIsStarred(!newVal)
+			toast.error("Failed to update star")
+		}
+	}, [isStarred, problem.id, onUpdate])
 
     const handleCardClick = (e: React.MouseEvent) => {
         // Prevent expanding panel if clicking on an interactive element
@@ -180,6 +199,13 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 
 							{/* Action Control */}
 							<div className={`flex items-center gap-2.5 w-full justify-end mt-auto ${!isCompressed ? 'md:w-auto' : ''}`}>
+								<button
+									onClick={handleStarToggle}
+									className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors shrink-0"
+									title={isStarred ? "Unstar" : "Star"}
+								>
+									<Star className={`w-4 h-4 transition-colors ${isStarred ? "fill-yellow-400 text-yellow-400" : "text-gray-400 dark:text-[#555]"}`} />
+								</button>
 								<Select value={rating} onValueChange={setRating} disabled={submitting}>
 									<SelectTrigger className={`bg-white dark:bg-white/[0.04] border-gray-200 dark:border-white/[0.08] shadow-sm text-[13px] font-medium dark:text-[rgba(255,255,255,0.9)] focus:ring-0 ${isCompressed ? 'flex-1 h-8' : 'w-[140px] md:w-[150px] h-9'}`} aria-label="Select review rating">
 										<SelectValue placeholder="How hard?" />

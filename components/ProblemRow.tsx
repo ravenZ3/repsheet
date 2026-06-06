@@ -22,6 +22,8 @@ import {
 	Loader2,
 	Settings,
 	Star,
+	FileText,
+	AlertTriangle,
 } from "lucide-react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -295,6 +297,25 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		}
 	}, [editableForm, problem, saveChanges])
 
+	const getFsrsLine = () => {
+		const parts: string[] = []
+		if (problem.reviewCount && problem.reviewCount > 0) {
+			parts.push(`${problem.reviewCount} review${problem.reviewCount === 1 ? "" : "s"}`)
+		}
+		if (problem.nextReviewDate) {
+			const diffDays = Math.ceil((new Date(problem.nextReviewDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+			if (diffDays < 0) parts.push("overdue")
+			else if (diffDays === 0) parts.push("due today")
+			else if (diffDays === 1) parts.push("due tomorrow")
+			else parts.push(`due in ${diffDays}d`)
+		} else if (problem.lastReview) {
+			const diffDays = Math.floor((Date.now() - new Date(problem.lastReview).getTime()) / (1000 * 60 * 60 * 24))
+			if (diffDays === 0) parts.push("reviewed today")
+			else parts.push(`last reviewed ${diffDays}d ago`)
+		}
+		return parts.join(" · ")
+	}
+
 	return (
 		<motion.div
 			layout
@@ -308,12 +329,12 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 				className="group relative border border-gray-200/50 dark:border-white/[0.08] rounded-[14px] bg-white/40 dark:bg-black/20 backdrop-blur-md shadow-sm hover:shadow-md hover:bg-white/60 dark:hover:bg-white/[0.04] hover:border-gray-300/50 dark:hover:border-white/[0.12] transition-all duration-300 overflow-hidden"
 			>
 				<CollapsibleTrigger asChild>
-					<div className="flex items-center justify-between p-6 cursor-pointer">
+					<div className="flex items-center justify-between py-3 px-5 cursor-pointer">
 						<div className="flex-1 min-w-0">
-							<h3 className="text-lg font-medium text-gray-800 dark:text-gray-100 truncate">
+							<h3 className="text-[15px] font-medium text-gray-800 dark:text-gray-100 truncate">
 								{problem.name}
 							</h3>
-							<div className="flex items-center gap-3 mt-2">
+							<div className="flex items-center gap-2 mt-1.5 flex-wrap">
 								<span className="text-sm text-gray-500 dark:text-gray-400">
 									{problem.platform}
 								</span>
@@ -341,7 +362,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 								)}
 							</div>
 							{problem.category.length > 0 && (
-								<div className="flex flex-wrap gap-1 mt-2">
+								<div className="flex flex-wrap gap-1 mt-1.5">
 									{problem.category
 										.slice(0, 3)
 										.map((cat, idx) => (
@@ -359,8 +380,23 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 									)}
 								</div>
 							)}
+							{getFsrsLine() && (
+								<p className="text-[11px] text-gray-400 dark:text-[#555] mt-1.5 font-medium tracking-wide">
+									{getFsrsLine()}
+								</p>
+							)}
 						</div>
-						<div className="flex items-center gap-3 ml-4">
+						<div className="flex items-center gap-2 ml-3">
+							{problem.notes && problem.notes.trim() && (
+								<span title="Has notes">
+									<FileText className="w-3.5 h-3.5 text-gray-300 dark:text-[#444] flex-shrink-0" />
+								</span>
+							)}
+							{problem.mistakesMade && problem.mistakesMade.trim() && (
+								<span title="Has mistakes logged">
+									<AlertTriangle className="w-3.5 h-3.5 text-gray-300 dark:text-[#444] flex-shrink-0" />
+								</span>
+							)}
 							<AnimatePresence mode="wait">
 								{saving && (
 									<motion.div
@@ -417,7 +453,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 										<Settings className="w-4 h-4 text-gray-500" />
 									</motion.button>
 								</DialogTrigger>
-								<DialogContent className="sm:max-w-md bg-white/80 dark:bg-black/40 backdrop-blur-3xl border border-gray-200 dark:border-white/[0.08] shadow-2xl">
+								<DialogContent className="sm:max-w-md bg-white/80 dark:bg-black/40 backdrop-blur-3xl border border-gray-200 dark:border-white/[0.08] shadow-2xl max-h-[90vh] overflow-y-auto">
 									<DialogHeader>
 										<DialogTitle>
 											Problem Settings
@@ -566,89 +602,77 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 						</div>
 					</div>
 				</CollapsibleTrigger>
-				<AnimatePresence>
-					{open && (
-						// You are already animating the container, which is good.
-						<motion.div
-							key="content-wrapper" // Add a key for stable animation
-							initial={{ height: 0, opacity: 0 }}
-							animate={{ height: "auto", opacity: 1 }}
-							exit={{ height: 0, opacity: 0 }}
-							transition={{ duration: 0.3, ease: "easeInOut" }}
-							// Add `overflow: 'hidden'` to clip the content during animation
-							style={{ overflow: "hidden" }}
-						>
-							<CollapsibleContent
-								id={`collapsible-content-${problem.id}`}
-								// Force the content to always be visible to its parent (the motion.div)
-								// so that the parent can handle the clipping.
-								forceMount
-								className="overflow-hidden" // Add overflow-hidden here too for safety
-							>
-								{/* --- THE FIX IS HERE --- */}
-								{/* Wrap the actual content in ANOTHER motion.div and animate its scale and opacity */}
-								<motion.div
-									initial={{ opacity: 0, y: -20 }} // Start slightly "up" and faded out
-									animate={{ opacity: 1, y: 0 }} // Animate to full opacity and normal position
-									exit={{ opacity: 0, y: -20 }} // Fade out and move up on exit
-									transition={{
-										duration: 0.2,
-										ease: "easeOut",
-									}} // A slightly faster transition for the content
-									className="px-6 pb-6 pt-4 space-y-4 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/30 dark:bg-white/[0.01]"
-								>
-									{/* All your content (Textareas, labels, etc.) now lives inside this new motion.div */}
-									<div className="space-y-4">
-										<div className="space-y-1">
-											<label
-												htmlFor={`notes-${problem.id}`}
-												className="text-sm font-medium"
-											>
-												📝 Notes
-											</label>
-											<Textarea
-												id={`notes-${problem.id}`}
-												value={editableForm.notes}
-												onChange={(e) =>
-													handleEditableChange(
-														"notes",
-														e.target.value
-													)
-												}
-												onBlur={savePendingChanges}
-											/>
-										</div>
-										<div className="space-y-1">
-											<label
-												htmlFor={`mistakes-${problem.id}`}
-												className="text-sm font-medium"
-											>
-												❌ Mistakes Made
-											</label>
-											<Textarea
-												id={`mistakes-${problem.id}`}
-												value={
-													editableForm.mistakesMade
-												}
-												onChange={(e) =>
-													handleEditableChange(
-														"mistakesMade",
-														e.target.value
-													)
-												}
-												onBlur={savePendingChanges}
-											/>
-										</div>
-									</div>
-									<div className="flex items-center justify-between pt-2">
-										{/* ... your save status indicator ... */}
-									</div>
-								</motion.div>
-								{/* --- END OF FIX --- */}
-							</CollapsibleContent>
-						</motion.div>
-					)}
-				</AnimatePresence>
+				<div
+					style={{
+						display: "grid",
+						gridTemplateRows: open ? "1fr" : "0fr",
+						transition: "grid-template-rows 0.25s ease",
+					}}
+				>
+					<div className="overflow-hidden">
+						<div className="px-6 pb-6 pt-4 space-y-4 border-t border-gray-100 dark:border-white/[0.06] bg-gray-50/30 dark:bg-white/[0.01]">
+							{(problem.reviewCount || problem.lastReview || problem.nextReviewDate || problem.link) && (
+								<div className="flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-gray-500 dark:text-[#666] pb-3 border-b border-gray-100 dark:border-white/[0.04]">
+									{problem.reviewCount != null && problem.reviewCount > 0 && (
+										<span><span className="font-medium text-gray-700 dark:text-[#888]">{problem.reviewCount}</span> reviews</span>
+									)}
+									{problem.lastReview && (
+										<span>Last reviewed <span className="font-medium text-gray-700 dark:text-[#888]">
+											{(() => {
+												const d = Math.floor((Date.now() - new Date(problem.lastReview!).getTime()) / (1000 * 60 * 60 * 24))
+												return d === 0 ? "today" : `${d}d ago`
+											})()}
+										</span></span>
+									)}
+									{problem.nextReviewDate && (
+										<span>Next review <span className="font-medium text-gray-700 dark:text-[#888]">
+											{new Date(problem.nextReviewDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+										</span></span>
+									)}
+									{problem.link && (
+										<a href={problem.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+											View problem →
+										</a>
+									)}
+								</div>
+							)}
+							<div className="space-y-4">
+								<div className="space-y-1">
+									<label
+										htmlFor={`notes-${problem.id}`}
+										className="text-sm font-medium"
+									>
+										📝 Notes
+									</label>
+									<Textarea
+										id={`notes-${problem.id}`}
+										value={editableForm.notes}
+										onChange={(e) =>
+											handleEditableChange("notes", e.target.value)
+										}
+										onBlur={savePendingChanges}
+									/>
+								</div>
+								<div className="space-y-1">
+									<label
+										htmlFor={`mistakes-${problem.id}`}
+										className="text-sm font-medium"
+									>
+										❌ Mistakes Made
+									</label>
+									<Textarea
+										id={`mistakes-${problem.id}`}
+										value={editableForm.mistakesMade}
+										onChange={(e) =>
+											handleEditableChange("mistakesMade", e.target.value)
+										}
+										onBlur={savePendingChanges}
+									/>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</Collapsible>
 		</motion.div>
 	)

@@ -17,7 +17,7 @@ import {
 } from "recharts"
 
 type ChartData = { name: string; value: number }[]
-type HeatmapData = { date: string; count: number; problems?: { id: string; name: string; difficulty: string; platform?: string | null; platformRating?: number | null }[] }[]
+type HeatmapData = { date: string; count: number; reviewCount?: number; problems?: { id: string; name: string; difficulty: string; platform?: string | null; platformRating?: number | null; link?: string | null }[] }[]
 export type DashboardData = {
 	status: ChartData
 	difficulty: ChartData
@@ -40,7 +40,6 @@ interface TooltipPayload {
 	value: number | string
 	payload: {
 		solved?: number
-		attempted?: number
 	}
 }
 
@@ -237,13 +236,13 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 							{label}
 						</p>
 						<p className="text-sm" style={{ color: "#818cf8" }}>
-							Solved:{" "}
-							<span className="font-bold">{tooltipData.solved}</span>
+							Solved: <span className="font-bold">{tooltipData.solved}</span>
 						</p>
-						<p className="text-sm" style={{ color: "#94a3b8" }}>
-							Attempted:{" "}
-							<span className="font-bold">{tooltipData.attempted}</span>
-						</p>
+						{tooltipData.reviewed !== undefined && (
+							<p className="text-sm" style={{ color: "#a855f7" }}>
+								Reviewed: <span className="font-bold">{tooltipData.reviewed}</span>
+							</p>
+						)}
 					</div>
 				)
 			}
@@ -292,6 +291,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 			dayArray.push({
 				date: new Date(d),
 				count: heatmapData?.count || 0,
+				reviewCount: heatmapData?.reviewCount || 0,
 			})
 		}
 		return dayArray
@@ -305,22 +305,33 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 		return "#39d353"
 	}
 
+	const getReviewColor = (count: number) => {
+		if (count === 0) return "rgba(255,255,255,0.02)"
+		if (count <= 1) return "#2d1b69"
+		if (count <= 3) return "#4c1d95"
+		if (count <= 6) return "#6d28d9"
+		return "#7c3aed"
+	}
+
 	const generateTrendData = () => {
 		if (!data.heatmap || data.heatmap.length === 0) return []
 		const trendMap = new Map<string, number>()
-		data.heatmap.forEach((item) => trendMap.set(item.date, item.count))
+		const reviewMap = new Map<string, number>()
+		data.heatmap.forEach((item) => {
+			trendMap.set(item.date, item.count)
+			reviewMap.set(item.date, item.reviewCount || 0)
+		})
 		const trendResult = []
 		for (let i = 29; i >= 0; i--) {
 			const date = getDateDaysAgo(i)
 			const dateStr = date.toISOString().split("T")[0]
-			const count = trendMap.get(dateStr) || 0
 			trendResult.push({
 				date: date.toLocaleDateString("en-US", {
 					month: "short",
 					day: "numeric",
 				}),
-				solved: count,
-				attempted: Math.ceil(count * 0.3),
+				solved: trendMap.get(dateStr) || 0,
+				reviewed: reviewMap.get(dateStr) || 0,
 			})
 		}
 		return trendResult
@@ -355,95 +366,67 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				</div>
 			</div>
 
-			<div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
+			<div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+			{/* Col 0: Skills */}
+			<div className="xl:col-span-1">
+				<div className="sticky top-24 space-y-4">
+					<UpcomingContests />
+					<SkillsMastery skills={data.skills} />
+				</div>
+			</div>
 				<div className="xl:col-span-3 space-y-4">
 				{/* FSRS Progress UI Module */}
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-				<div className="bg-white dark:bg-[#111] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
-					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center">
-						<span className="mr-2">📚</span> Due Today
-					</h3>
-					<div className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-baseline gap-2">
-                        {progress.dueToday}
-                        <span className="text-xs font-normal text-gray-500">
-                            / {progress.limit} limit
-                        </span>
-                    </div>
+				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
+					<p className="text-[80px] leading-none [font-family:var(--font-merriweather)] text-gray-900 dark:text-gray-100 px-4 py-2 flex-1">{progress.dueToday}</p>
+					<p className="text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2.5 right-3">Due today</p>
 				</div>
 
-				<div className="bg-white dark:bg-[#111] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
-					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center">
-						<span className="mr-2">⚡</span> Reviewed Today
-					</h3>
-					<div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {progress.reviewedToday}
-                    </div>
+				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
+					<p className="text-[80px] leading-none [font-family:var(--font-merriweather)] text-green-600 dark:text-green-400 px-4 py-2 flex-1">{progress.reviewedToday}</p>
+					<p className="text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2.5 right-3">Reviewed today</p>
 				</div>
 
-				<div className="bg-white dark:bg-[#111] p-4 rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight">
-					<h3 className="text-[13px] uppercase font-semibold tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center">
-						<span className="mr-2">⏳</span> FSRS Backlog
-					</h3>
-					<div className={`text-2xl font-bold ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>
-                        +{progress.backlog}
-                    </div>
-					{progress.backlog > 0 && (
-                        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5">
-                            ~{progress.daysToClear} day{progress.daysToClear === 1 ? '' : 's'} to clear
-                        </p>
-                    )}
+				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
+					<p className={`text-[80px] leading-none [font-family:var(--font-merriweather)] px-4 py-2 flex-1 ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>+{progress.backlog}</p>
+					<p className="text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2.5 right-3">{progress.backlog > 0 ? `~${progress.daysToClear}d to clear` : "Backlog"}</p>
 				</div>
 			</div>
 
 			<div className="flex flex-col gap-5">
                 {/* Full Width Trend Chart */}
-				<div className="w-full h-[280px] flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
-					<div className="flex-1 min-h-0">
+				<div className="w-full flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
+					<div className="h-[160px]">
 						<ResponsiveContainer width="100%" height="100%">
 							<AreaChart
 								data={trendData}
-								margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+								margin={{ top: 5, right: 20, left: 10, bottom: 0 }}
 							>
 								<defs>
 									<linearGradient id="colorSolved" x1="0" y1="0" x2="0" y2="1">
 										<stop offset="5%" stopColor="#818cf8" stopOpacity={0.4} />
 										<stop offset="95%" stopColor="#818cf8" stopOpacity={0.0} />
 									</linearGradient>
-									<linearGradient id="colorAttempted" x1="0" y1="0" x2="0" y2="1">
-										<stop offset="5%" stopColor="#cbd5e1" stopOpacity={0.4} />
-										<stop offset="95%" stopColor="#cbd5e1" stopOpacity={0.0} />
+									<linearGradient id="colorReviewed" x1="0" y1="0" x2="0" y2="1">
+										<stop offset="5%" stopColor="#a855f7" stopOpacity={0.35} />
+										<stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
 									</linearGradient>
-								</defs>
+									</defs>
 								<XAxis
 									dataKey="date"
 									tick={{ fill: "#64748b", fontSize: 12 }}
 									axisLine={{ stroke: "#e2e8f0" }}
-                                    tickLine={false}
+									tickLine={false}
 								/>
 								<YAxis
 									tick={{ fill: "#64748b", fontSize: 12 }}
 									axisLine={{ stroke: "#e2e8f0" }}
-                                    tickLine={false}
-                                    label={{ value: 'Problems', angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 13, fontWeight: 500 } }}
+									tickLine={false}
+									label={{ value: 'Problems', angle: -90, position: 'insideLeft', style: { fill: '#64748b', fontSize: 13, fontWeight: 500 } }}
 								/>
 								<Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255, 255, 255, 0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
-								<Area
-									type="monotone"
-									dataKey="solved"
-									name="Solved"
-									stroke="#818cf8"
-									fill="url(#colorSolved)"
-									strokeWidth={2}
-								/>
-								<Area
-									type="monotone"
-									dataKey="attempted"
-									name="Attempted"
-									stroke="#94a3b8"
-									fill="url(#colorAttempted)"
-									strokeWidth={2}
-								/>
-								<Legend wrapperStyle={{ paddingTop: "20px" }} />
+								<Area type="monotone" dataKey="reviewed" name="Reviewed" stroke="#a855f7" fill="url(#colorReviewed)" strokeWidth={2} />
+								<Area type="monotone" dataKey="solved" name="Solved" stroke="#818cf8" fill="url(#colorSolved)" strokeWidth={2} />
 							</AreaChart>
 						</ResponsiveContainer>
 					</div>
@@ -451,11 +434,11 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 
 				{/* Conditionally Render Difficulty Chart if not strict Codeforces mode */}
 				{currentPlatform !== 'Codeforces' && (
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-5 h-[300px]">
-					<div className="flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+					<div className="flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08] h-[260px]">
                         <div className="flex justify-between items-center mb-1">
                             <h3 className="text-[14px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] flex items-center">
-                                <span className="mr-2">📊</span> {currentPlatform === 'Codeforces' ? 'Rating Distribution' : 'Problem Difficulty'}
+                                {currentPlatform === 'Codeforces' ? 'Rating Distribution' : 'Problem Difficulty'}
                             </h3>
                         </div>
 						<div className="flex-1 min-h-0">
@@ -466,12 +449,12 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 								>
 									<XAxis
 										dataKey="name"
-										tick={{ fill: "#64748b", fontSize: 12 }}
+										tick={{ fill: "#94a3b8", fontSize: 12 }}
 										axisLine={{ stroke: "#e2e8f0" }}
                                         tickLine={false}
 									/>
 									<YAxis
-										tick={{ fill: "#64748b", fontSize: 12 }}
+										tick={{ fill: "#94a3b8", fontSize: 12 }}
 										axisLine={{ stroke: "#e2e8f0" }}
                                         tickLine={false}
 									/>
@@ -489,31 +472,54 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 						</div>
 					</div>
 
-					<div className="flex flex-col items-center justify-center bg-white dark:bg-[#111] p-4 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
-						<div className="overflow-x-auto w-full flex justify-center flex-1 items-center">
+					<div className="flex flex-col items-center justify-between bg-white dark:bg-[#111] p-3 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
+						<div className="overflow-x-auto w-full flex justify-center items-center flex-1">
 							<div className="grid grid-rows-7 grid-flow-col gap-[3px]">
-								{generateHeatmapGrid().map((day, index) => (
-									<div
-										key={index}
-										className="w-3.5 h-3.5 rounded-[2px] cursor-pointer border border-transparent dark:border-white/[0.04]"
-										style={{ backgroundColor: getHeatmapColor(day.count) }}
-										title={`${formatDate(day.date)} - ${day.count} problems solved`}
-									/>
-								))}
+								{generateHeatmapGrid().map((day, index) => {
+									const hasSolves = day.count > 0
+									const hasReviews = day.reviewCount > 0
+									const bgColor = hasSolves ? getHeatmapColor(day.count) : hasReviews ? getReviewColor(day.reviewCount) : "rgba(255,255,255,0.02)"
+									const borderColor = hasSolves && hasReviews ? "#7c3aed" : "transparent"
+									const titleParts = []
+									if (day.count > 0) titleParts.push(`${day.count} solved`)
+									if (day.reviewCount > 0) titleParts.push(`${day.reviewCount} reviewed`)
+									const title = `${formatDate(day.date)}${titleParts.length > 0 ? " — " + titleParts.join(", ") : ""}`
+									return (
+										<div
+											key={index}
+											className="w-4 h-4 rounded-[2px] cursor-pointer"
+											style={{ backgroundColor: bgColor, border: `2px solid ${borderColor}` }}
+											title={title}
+										/>
+									)
+								})}
 							</div>
 						</div>
-						<div className="flex items-center justify-center gap-x-3 mt-6 text-sm text-gray-500 dark:text-[#888]">
-							<span className="font-medium text-[13px] uppercase tracking-wider">Less</span>
-							<div className="flex items-center space-x-1.5">
-								{[0, 1, 3, 6, 10].map((count, i) => (
-									<div
-										key={i}
-										className="w-3.5 h-3.5 rounded-[2px] border border-transparent dark:border-white/[0.04] shadow-sm"
-										style={{ backgroundColor: getHeatmapColor(count) }}
-									/>
-								))}
+						<div className="flex flex-col items-center gap-2 mt-3">
+							<div className="flex items-center gap-x-3 text-sm text-gray-500 dark:text-[#888]">
+								<span className="font-medium text-[11px] uppercase tracking-wider">Solved</span>
+								<div className="flex items-center space-x-1.5">
+									{[0, 1, 3, 6, 10].map((count, i) => (
+										<div
+											key={i}
+											className="w-3 h-3 rounded-[2px]"
+											style={{ backgroundColor: getHeatmapColor(count), border: "2px solid transparent" }}
+										/>
+									))}
+								</div>
 							</div>
-							<span className="font-medium text-[13px] uppercase tracking-wider">More</span>
+							<div className="flex items-center gap-x-3 text-sm text-gray-500 dark:text-[#888]">
+								<span className="font-medium text-[11px] uppercase tracking-wider">Reviewed</span>
+								<div className="flex items-center space-x-1.5">
+									{[0, 1, 3, 6, 10].map((count, i) => (
+										<div
+											key={i}
+											className="w-3 h-3 rounded-[2px]"
+											style={{ backgroundColor: getReviewColor(count), border: "2px solid transparent" }}
+										/>
+									))}
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -524,7 +530,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				<div className="w-full h-[240px] flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-[15px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] flex items-center">
-                            <span className="mr-2">📈</span> Elo Rating Distribution
+                            Elo Rating Distribution
                         </h3>
                     </div>
 					<div className="flex-1 min-h-0">
@@ -535,12 +541,12 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 							>
 								<XAxis
 									dataKey="name"
-									tick={{ fill: "#64748b", fontSize: 12 }}
+									tick={{ fill: "#94a3b8", fontSize: 12 }}
 									axisLine={{ stroke: "#e2e8f0" }}
                                     tickLine={false}
 								/>
 								<YAxis
-									tick={{ fill: "#64748b", fontSize: 12 }}
+									tick={{ fill: "#94a3b8", fontSize: 12 }}
 									axisLine={{ stroke: "#e2e8f0" }}
                                     tickLine={false}
 								/>
@@ -561,27 +567,26 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				<div className="bg-white dark:bg-[#111] p-4 rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] relative overflow-hidden backdrop-blur-3xl flex-shrink-0 h-[500px] flex flex-col min-h-0">
 					<div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay pointer-events-none" />
 					<div className="flex items-center justify-between mb-4 flex-shrink-0">
-						<h2 className="text-[15px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] flex items-center">
-							<span className="mr-2">⚡</span>
+						<h2 className="text-[13px] font-medium tracking-tight text-gray-900 dark:text-[rgba(255,255,255,0.95)] whitespace-nowrap">
 							Recent Activity
 						</h2>
-						<div className="flex items-center gap-2">
-							<span className="text-[12px] font-medium text-gray-400 dark:text-[#666] mr-3">
-								{activityPage} <span className="opacity-50">/</span> {totalActivityPages}
-							</span>
-							<button 
+						<div className="flex items-center gap-1.5">
+							<button
 								onClick={() => setActivityPage(p => Math.max(1, p - 1))}
 								disabled={activityPage === 1}
-								className="w-7 h-7 rounded-md bg-gray-100 dark:bg-white/[0.04] border border-transparent dark:border-white/[0.04] flex items-center justify-center text-gray-600 dark:text-[#888] hover:dark:bg-white/[0.08] hover:dark:text-[rgba(255,255,255,0.9)] disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
+								className="w-6 h-6 rounded-md bg-gray-100 dark:bg-white/[0.04] flex items-center justify-center text-gray-600 dark:text-[#888] hover:dark:bg-white/[0.08] disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
 							>
-								<ChevronLeft className="w-4 h-4" />
+								<ChevronLeft className="w-3.5 h-3.5" />
 							</button>
-							<button 
+							<span className="text-[11px] font-medium text-gray-400 dark:text-[#555] tabular-nums">
+								{activityPage}/{totalActivityPages}
+							</span>
+							<button
 								onClick={() => setActivityPage(p => Math.min(totalActivityPages, p + 1))}
 								disabled={activityPage === totalActivityPages}
-								className="w-7 h-7 rounded-md bg-gray-100 dark:bg-white/[0.04] border border-transparent dark:border-white/[0.04] flex items-center justify-center text-gray-600 dark:text-[#888] hover:dark:bg-white/[0.08] hover:dark:text-[rgba(255,255,255,0.9)] disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
+								className="w-6 h-6 rounded-md bg-gray-100 dark:bg-white/[0.04] flex items-center justify-center text-gray-600 dark:text-[#888] hover:dark:bg-white/[0.08] disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
 							>
-								<ChevronRight className="w-4 h-4" />
+								<ChevronRight className="w-3.5 h-3.5" />
 							</button>
 						</div>
 					</div>
@@ -590,36 +595,38 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
                             <div key={`${activity.date}-${index}`} className="flex flex-col gap-2">
 							<div
                                 onClick={() => setExpandedDay(expandedDay === activity.date ? null : activity.date)}
-								className="flex items-center justify-between p-3.5 bg-gray-50/50 dark:bg-white/[0.02] border border-transparent dark:border-white/[0.04] rounded-[10px] cursor-pointer group hover:dark:bg-white/[0.04] hover:dark:border-white/[0.08] transition-colors"
+								className="flex flex-col gap-1.5 p-3 bg-gray-50/50 dark:bg-white/[0.02] border border-transparent dark:border-white/[0.04] rounded-[10px] cursor-pointer group hover:dark:bg-white/[0.04] hover:dark:border-white/[0.08] transition-colors"
 							>
-								<div className="flex items-center space-x-3.5">
-									<div className={`w-1.5 h-1.5 rounded-full transition-all ${getDayPlatformDotColor(activity.problems)}`}></div>
-									<div>
-										<p className="font-medium text-[14px] text-gray-900 dark:text-[rgba(255,255,255,0.9)] tracking-wide group-hover:text-white transition-colors">
-											{activity.count} problem
-											{activity.count > 1 ? "s" : ""}{" "}
-											solved
-										</p>
-										<p className="text-[13px] mt-0.5 text-gray-500 dark:text-[#888]">
-											{new Date(activity.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}
-										</p>
-									</div>
+								<div className="flex items-center gap-2">
+									<div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${getDayPlatformDotColor(activity.problems)}`} />
+									<p className="font-medium text-[13px] text-gray-900 dark:text-[rgba(255,255,255,0.9)] group-hover:text-white transition-colors">
+										{activity.count} problem{activity.count > 1 ? "s" : ""} solved
+									</p>
 								</div>
-								<span className="text-[13px] font-medium text-gray-600 dark:text-[rgba(255,255,255,0.5)]">
-									{activity.daysAgoText}
-								</span>
+								<div className="flex items-center justify-between bg-gray-100/60 dark:bg-white/[0.03] rounded-[6px] px-2 py-1">
+									<span className="text-[11px] text-gray-500 dark:text-[#888]">
+										{new Date(activity.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+									</span>
+									<span className="text-[11px] font-medium text-gray-500 dark:text-[#666]">
+										{activity.daysAgoText}
+									</span>
+								</div>
 							</div>
                             {expandedDay === activity.date && activity.problems && activity.problems.length > 0 && (
                                 <div className="ml-3 pl-3 border-l-[1.5px] border-gray-200 dark:border-white/[0.06] flex flex-col gap-2 pb-2 mt-1">
                                     {activity.problems.map((p) => (
                                         <div key={p.id} className="text-[13px] flex items-center justify-between text-gray-700 dark:text-[rgba(255,255,255,0.7)] hover:dark:text-white transition-colors py-1">
-                                            <div className="flex items-center gap-2 pr-3 w-[150px]">
+                                            <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
                                                 {p.platform === 'leetcode' && <div className="w-1.5 h-1.5 rounded-full bg-[#FFA116] shadow-[0_0_8px_rgba(255,161,22,0.4)]" title="LeetCode" />}
                                                 {p.platform === 'codeforces' && <div className="w-1.5 h-1.5 rounded-full bg-[#1F8ACB] shadow-[0_0_8px_rgba(31,138,203,0.4)]" title="Codeforces" />}
                                                 {!p.platform && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" title="Manual" />}
-                                                <span className="truncate">{p.name}</span>
+                                                {p.link ? (
+                                                    <a href={p.link} target="_blank" rel="noopener noreferrer" className="truncate hover:text-white transition-colors hover:underline underline-offset-2">{p.name}</a>
+                                                ) : (
+                                                    <span className="truncate">{p.name}</span>
+                                                )}
                                             </div>
-                                            <span className={`text-[11px] px-2 py-0.5 rounded-[4px] font-bold uppercase tracking-wider flex-shrink-0 ${
+                                            <span className={`text-[9px] px-1.5 py-0.5 rounded-[4px] font-bold uppercase tracking-wider flex-shrink-0 ${
                                                 p.platform === 'Codeforces' || p.platform === 'codeforces' ? 'bg-[#1F8ACB]/10 text-[#1F8ACB]' :
                                                 p.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-500' :
                                                 p.difficulty === 'Medium' ? 'bg-indigo-500/10 text-indigo-400' :
@@ -635,8 +642,6 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 						))}
 					</div>
 				</div>
-                <UpcomingContests />
-                <SkillsMastery skills={data.skills} />
                 </div>
                 </div>
 			)}
