@@ -21,6 +21,7 @@ import {
 	AlertCircle,
 	Loader2,
 	Settings,
+	Star,
 } from "lucide-react"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -85,6 +86,7 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		isStuck: problem.isStuck,
 		category: problem.category.join(", "),
 	})
+	const [isStarred, setIsStarred] = useState(problem.isStarred)
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [lastSaved, setLastSaved] = useState<Date | null>(null)
@@ -254,6 +256,14 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 		setError(null)
 	}, [problem])
 
+	const handleStarToggle = useCallback((e: React.MouseEvent) => {
+		e.stopPropagation()
+		const newVal = !isStarred
+		setIsStarred(newVal)
+		saveChanges({ isStarred: newVal })
+		saveChanges.flush()
+	}, [isStarred, saveChanges])
+
 	// --- Autosave Effect with Cleanup ---
 	useEffect(() => {
 		// This handler defines what to save
@@ -370,6 +380,20 @@ export default function ProblemRow({ problem, onUpdate }: ProblemRowProps) {
 									</motion.div>
 								)}
 							</AnimatePresence>
+							<motion.button
+								whileHover={{ scale: 1.1 }}
+								onClick={handleStarToggle}
+								className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+								title={isStarred ? "Unstar" : "Star"}
+							>
+								<Star
+									className={`w-4 h-4 transition-colors ${
+										isStarred
+											? "fill-yellow-400 text-yellow-400"
+											: "text-gray-400"
+									}`}
+								/>
+							</motion.button>
 							<Dialog
 								open={settingsOpen}
 								onOpenChange={setSettingsOpen}
