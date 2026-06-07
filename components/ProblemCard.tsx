@@ -102,10 +102,10 @@ export default function ProblemCard({ problem, isSelected, onSelect, onUpdate }:
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
                 {problem.notes && problem.notes.trim() && (
-                    <FileText className="w-3 h-3 text-gray-300 dark:text-[#444]" title="Has notes" />
+                    <span title="Has notes"><FileText className="w-3 h-3 text-gray-300 dark:text-[#444]" /></span>
                 )}
                 {problem.mistakesMade && problem.mistakesMade.trim() && (
-                    <AlertTriangle className="w-3 h-3 text-gray-300 dark:text-[#444]" title="Has mistakes logged" />
+                    <span title="Has mistakes logged"><AlertTriangle className="w-3 h-3 text-gray-300 dark:text-[#444]" /></span>
                 )}
                 <button
                     onClick={handleStarToggle}

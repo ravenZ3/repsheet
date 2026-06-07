@@ -57,7 +57,7 @@ export default function SearchBar({ problems, onResults, showFilters: externalSh
 		categories: [],
 		isStarred: false,
 	})
-	const [showMoreFilters, setShowMoreFilters] = useState(false)
+	const [showMoreFilters, setShowMoreFilters] = useState(true)
 
 	const uniquePlatforms = useMemo(() => {
 		const platforms = [...new Set(problems.map((p) => p.platform))].filter(
@@ -214,14 +214,14 @@ export default function SearchBar({ problems, onResults, showFilters: externalSh
 							<div className="flex items-center gap-1.5 min-w-0">
 								<span className="text-[11px] font-medium text-gray-400 dark:text-[#555] shrink-0">Sort</span>
 								<Select value={sortBy} onValueChange={setSortBy}>
-									<SelectTrigger className="h-7 text-[12px] border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[110px]"><SelectValue /></SelectTrigger>
+									<SelectTrigger className="h-4 text-[11px] !px-2 !py-0 border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[110px]"><SelectValue /></SelectTrigger>
 									<SelectContent>
 										{SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
 									</SelectContent>
 								</Select>
 								<button
 									onClick={() => setSortOrder((p) => p === "asc" ? "desc" : "asc")}
-									className="h-7 w-7 flex items-center justify-center rounded-md border border-gray-200 dark:border-white/[0.08] text-gray-500 dark:text-[#888] hover:bg-gray-100 dark:hover:bg-white/[0.05] transition-colors shrink-0"
+									className="h-4 w-4 flex items-center justify-center rounded-md border border-gray-200 dark:border-white/[0.08] text-gray-500 dark:text-[#888] hover:bg-gray-100 dark:hover:bg-white/[0.05] transition-colors shrink-0"
 								>
 									{sortOrder === "asc" ? <SortAsc className="w-3 h-3" /> : <SortDesc className="w-3 h-3" />}
 								</button>
@@ -230,7 +230,7 @@ export default function SearchBar({ problems, onResults, showFilters: externalSh
 							<div className="flex items-center gap-1.5">
 								<span className="text-[11px] font-medium text-gray-400 dark:text-[#555] shrink-0">Difficulty</span>
 								<Select value={filters.difficulty} onValueChange={(v) => setFilters((p) => ({ ...p, difficulty: v }))}>
-									<SelectTrigger className="h-7 text-[12px] border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[90px]"><SelectValue /></SelectTrigger>
+									<SelectTrigger className="h-4 text-[11px] !px-2 !py-0 border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[90px]"><SelectValue /></SelectTrigger>
 									<SelectContent>
 										{DIFFICULTY_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
 									</SelectContent>
@@ -240,7 +240,7 @@ export default function SearchBar({ problems, onResults, showFilters: externalSh
 							<div className="flex items-center gap-1.5">
 								<span className="text-[11px] font-medium text-gray-400 dark:text-[#555] shrink-0">Platform</span>
 								<Select value={filters.platform} onValueChange={(v) => setFilters((p) => ({ ...p, platform: v }))}>
-									<SelectTrigger className="h-7 text-[12px] border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[110px]"><SelectValue /></SelectTrigger>
+									<SelectTrigger className="h-4 text-[11px] !px-2 !py-0 border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[110px]"><SelectValue /></SelectTrigger>
 									<SelectContent>
 										{uniquePlatforms.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
 									</SelectContent>
@@ -250,7 +250,7 @@ export default function SearchBar({ problems, onResults, showFilters: externalSh
 							<div className="flex items-center gap-1.5">
 								<span className="text-[11px] font-medium text-gray-400 dark:text-[#555] shrink-0">Stuck</span>
 								<Select value={filters.isStuck.toString()} onValueChange={(v) => setFilters((p) => ({ ...p, isStuck: v === "All" ? "All" : v === "true" }))}>
-									<SelectTrigger className="h-7 text-[12px] border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[70px]"><SelectValue /></SelectTrigger>
+									<SelectTrigger className="h-4 text-[11px] !px-2 !py-0 border-gray-200 dark:border-white/[0.08] bg-transparent dark:text-[rgba(255,255,255,0.8)] w-[70px]"><SelectValue /></SelectTrigger>
 									<SelectContent>
 										{["All", "true", "false"].map((o) => <SelectItem key={o} value={o}>{o === "true" ? "Yes" : o === "false" ? "No" : "All"}</SelectItem>)}
 									</SelectContent>

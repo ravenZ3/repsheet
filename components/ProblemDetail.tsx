@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { useTheme } from "next-themes"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeClassNames from "rehype-class-names"
@@ -64,7 +63,7 @@ function MarkdownContent({ content }: { content: string }) {
     }, [])
 
     return (
-        <div style={{ fontFeatureSettings: '"liga" 1, "kern" 1, "calt" 0' }}>
+        <div style={{ fontFeatureSettings: '"liga" 1, "kern" 1, "calt" 0', overflowWrap: "anywhere", wordBreak: "break-word", minWidth: 0 }}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[[rehypeClassNames, MD_CLASSES]]}
@@ -128,6 +127,42 @@ export default function ProblemDetail({ problem, onUpdate, onClose }: ProblemDet
     const router = useRouter()
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [notesMode, setNotesMode] = useState<"view" | "edit">("view")
+
+    const getAdaptiveSplit = (notes: string, mistakes: string) => {
+        const hasNotes = notes.trim().length > 0
+        const hasMistakes = mistakes.trim().length > 0
+        if (!hasMistakes) return 70
+        if (!hasNotes) return 30
+        return 60
+    }
+    const [splitPct, setSplitPct] = useState(() => getAdaptiveSplit(problem.notes || "", problem.mistakesMade || ""))
+    const [isDesktop, setIsDesktop] = useState(false)
+    useEffect(() => {
+        const check = () => setIsDesktop(window.innerWidth >= 640)
+        check()
+        window.addEventListener("resize", check)
+        return () => window.removeEventListener("resize", check)
+    }, [])
+    const workspaceRef = useRef<HTMLDivElement>(null)
+    const isDragging = useRef(false)
+
+    const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault()
+        isDragging.current = true
+        const onMove = (ev: MouseEvent) => {
+            if (!isDragging.current || !workspaceRef.current) return
+            const rect = workspaceRef.current.getBoundingClientRect()
+            const pct = ((ev.clientX - rect.left) / rect.width) * 100
+            setSplitPct(Math.min(70, Math.max(30, pct)))
+        }
+        const onUp = () => {
+            isDragging.current = false
+            document.removeEventListener("mousemove", onMove)
+            document.removeEventListener("mouseup", onUp)
+        }
+        document.addEventListener("mousemove", onMove)
+        document.addEventListener("mouseup", onUp)
+    }, [])
     const [editableForm, setEditableForm] = useState<EditableForm>({
         notes: problem.notes || "",
         mistakesMade: problem.mistakesMade || "",
@@ -288,22 +323,22 @@ export default function ProblemDetail({ problem, onUpdate, onClose }: ProblemDet
     const fsrsItems = getFsrsContext()
 
     return (
-        <div className="h-full flex flex-col bg-white dark:bg-[#111] border border-gray-200 dark:border-white/[0.08] rounded-[16px] shadow-xl overflow-hidden">
+        <div className="flex flex-col lg:h-full bg-white dark:bg-[#111] border border-gray-200 dark:border-white/[0.08] rounded-[16px] shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.06]">
-                <div className="flex-1 min-w-0 pr-3">
-                    <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white leading-snug">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between px-5 py-4 border-b border-gray-100 dark:border-white/[0.06] gap-3">
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white leading-snug" title={problem.name}>
                         {problem.name}
                     </h2>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {problem.platform && (
-                            <span className="text-[11px] text-gray-400 dark:text-[#666]">{problem.platform}</span>
+                            <span className="text-[11px] text-gray-400 dark:text-[#666] whitespace-nowrap">{problem.platform}</span>
                         )}
                         {problem.platformRating && (
-                            <span className="text-[11px] font-mono text-[#2B73FF] dark:text-[#5F9CFF]">{problem.platformRating}</span>
+                            <span className="text-[11px] font-mono text-[#2B73FF] dark:text-[#5F9CFF] whitespace-nowrap">{problem.platformRating}</span>
                         )}
                         {problem.category.slice(0, 3).map((cat, i) => (
-                            <span key={i} className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-[#888] rounded-[4px]">
+                            <span key={i} className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-white/[0.04] text-gray-500 dark:text-[#888] rounded-[4px] whitespace-nowrap">
                                 {cat}
                             </span>
                         ))}
@@ -314,13 +349,13 @@ export default function ProblemDetail({ problem, onUpdate, onClose }: ProblemDet
                     <div className="flex bg-gray-100 dark:bg-white/[0.05] rounded-lg p-0.5 border border-transparent dark:border-white/[0.05]">
                         <button
                             onClick={() => setNotesMode("view")}
-                            className={`px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider rounded-md transition-all ${notesMode === "view" ? "bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm" : "text-gray-400 dark:text-[#666] hover:text-gray-700 dark:hover:text-white"}`}
+                            className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all ${notesMode === "view" ? "bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm" : "text-gray-400 dark:text-[#666] hover:text-gray-700 dark:hover:text-white"}`}
                         >
                             Preview
                         </button>
                         <button
                             onClick={() => setNotesMode("edit")}
-                            className={`px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider rounded-md transition-all ${notesMode === "edit" ? "bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm" : "text-gray-400 dark:text-[#666] hover:text-gray-700 dark:hover:text-white"}`}
+                            className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all ${notesMode === "edit" ? "bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm" : "text-gray-400 dark:text-[#666] hover:text-gray-700 dark:hover:text-white"}`}
                         >
                             Edit
                         </button>
@@ -414,51 +449,57 @@ export default function ProblemDetail({ problem, onUpdate, onClose }: ProblemDet
             )}
 
             {/* Workspace */}
-            {notesMode === "view" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-white/[0.05] flex-1 min-h-0 overflow-hidden">
-                    <div className="flex flex-col p-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        <label className="text-[11px] font-semibold text-gray-400 dark:text-[#555] uppercase tracking-widest shrink-0 mb-3 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/50 inline-block" /> Notes
-                        </label>
-                        <div className="pl-3 border-l border-gray-100 dark:border-white/[0.04]">
+            <div ref={workspaceRef} className="flex flex-col lg:flex-row lg:flex-1 lg:min-h-0 min-w-0 overflow-hidden">
+                {/* Notes panel */}
+                <div
+                    style={isDesktop ? { width: `${splitPct}%`, maxWidth: `${splitPct}%`, flexShrink: 0, flexGrow: 0, overflow: "hidden" } : undefined}
+                    className="flex flex-col p-5 overflow-y-auto w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                >
+                    <label className="text-[14px] text-gray-200 dark:text-[#555] shrink-0 mb-3 [font-family:var(--font-slabo)]">Notes</label>
+                    {notesMode === "view" ? (
+                        <div className="pl-3 border-l border-gray-100 dark:border-white/[0.04] overflow-x-auto break-words">
                             <MarkdownContent content={editableForm.notes} />
                         </div>
-                    </div>
-                    <div className="flex flex-col p-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        <label className="text-[11px] font-semibold text-gray-400 dark:text-[#555] uppercase tracking-widest shrink-0 mb-3 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400/50 inline-block" /> Mistakes
-                        </label>
-                        <div className="pl-3 border-l border-gray-100 dark:border-white/[0.04]">
-                            <MarkdownContent content={editableForm.mistakesMade} />
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-white/[0.05] flex-1 min-h-0 overflow-hidden">
-                    <div className="flex flex-col p-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        <label className="text-[11px] font-semibold text-gray-400 dark:text-[#555] uppercase tracking-widest shrink-0 mb-1.5">Notes</label>
+                    ) : (
                         <Textarea
                             value={editableForm.notes}
                             onChange={(e) => handleEditableChange("notes", e.target.value)}
                             onBlur={savePendingChanges}
-
                             placeholder="What did you learn? Key insights, patterns..."
                             className="flex-1 text-[13px] resize-none bg-transparent border-0 focus:ring-0 p-0 shadow-none min-h-[120px] font-mono"
                         />
-                    </div>
-                    <div className="flex flex-col p-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        <label className="text-[11px] font-semibold text-gray-400 dark:text-[#555] uppercase tracking-widest shrink-0 mb-1.5">Mistakes</label>
+                    )}
+                </div>
+
+                {/* Divider — desktop only */}
+                <div
+                    onMouseDown={handleDividerMouseDown}
+                    className="hidden lg:block w-px bg-gray-100 dark:bg-white/[0.05] hover:bg-gray-300 dark:hover:bg-white/[0.15] cursor-col-resize shrink-0 transition-colors relative"
+                >
+                    <div className="absolute inset-y-0 -left-2 -right-2" />
+                </div>
+
+                {/* Mobile separator */}
+                <div className="lg:hidden h-px bg-gray-100 dark:bg-white/[0.05] shrink-0 mx-5" />
+
+                {/* Mistakes panel */}
+                <div className="flex flex-col p-5 flex-1 min-w-0 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <label className="text-[14px] text-gray-200 dark:text-[#555] shrink-0 mb-3 [font-family:var(--font-slabo)]">Mistakes</label>
+                    {notesMode === "view" ? (
+                        <div className="pl-3 border-l border-gray-100 dark:border-white/[0.04] break-words min-w-0">
+                            <MarkdownContent content={editableForm.mistakesMade} />
+                        </div>
+                    ) : (
                         <Textarea
                             value={editableForm.mistakesMade}
                             onChange={(e) => handleEditableChange("mistakesMade", e.target.value)}
                             onBlur={savePendingChanges}
-
                             placeholder="What went wrong? Edge cases missed, wrong approach..."
                             className="flex-1 text-[13px] resize-none bg-transparent border-0 focus:ring-0 p-0 shadow-none min-h-[120px] font-mono"
                         />
-                    </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     )
 }

@@ -40,6 +40,7 @@ interface TooltipPayload {
 	value: number | string
 	payload: {
 		solved?: number
+		reviewed?: number
 	}
 }
 

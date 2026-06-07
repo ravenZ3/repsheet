@@ -110,12 +110,12 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 				>
 					<div 
                         onClick={handleCardClick}
-                        className={`rounded-[14px] transition-all duration-300 p-5 flex flex-col justify-between gap-4 cursor-pointer relative overflow-hidden backdrop-blur-xl ${!isCompressed ? 'md:flex-row md:items-center md:gap-6' : ''} ${isSelected ? 'bg-white dark:bg-white/[0.08] border-gray-300 dark:border-white/[0.15] shadow-md border-l-[3px] border-l-red-500/80 ring-4 ring-red-500/10' : 'bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06] shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-white/[0.15] dark:hover:bg-white/[0.08] border-l-[1px]'}`}
+                        className={`rounded-[14px] transition-all duration-300 p-3.5 flex flex-col justify-between gap-2.5 cursor-pointer relative overflow-hidden backdrop-blur-xl ${!isCompressed ? 'md:flex-row md:items-center md:gap-4' : ''} ${isSelected ? 'bg-white dark:bg-white/[0.08] border-gray-300 dark:border-white/[0.15] shadow-md border-l-[3px] border-l-red-500/50 ring-1 ring-red-500/10' : 'bg-white dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.06] shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-white/[0.15] dark:hover:bg-white/[0.08] border-l-[1px]'}`}
                     >
 						{isSelected && <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.15] to-transparent mix-blend-overlay pointer-events-none" />}
 						
 						{/* Left Side: Detail stack */}
-						<div className="flex-1 min-w-0 flex flex-col gap-2">
+						<div className="flex-1 min-w-0 flex flex-col gap-1.5">
 							{/* Top row: Title and Badges */}
 							<div className="flex flex-wrap items-center gap-3">
 								<a
@@ -129,16 +129,20 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 								</a>
 							</div>
 
-                            {!isCompressed && (
-							    <p className="text-[13px] font-medium text-gray-500 dark:text-[#888]">
-								    Categories: <span className="text-gray-700 dark:text-[rgba(255,255,255,0.7)]">{problem.category.length ? problem.category.join(", ") : "None"}</span>
-							    </p>
+                            {!isCompressed && problem.category.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {problem.category.map((cat) => (
+                                        <span key={cat} className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-gray-200 dark:border-white/[0.08] text-gray-500 dark:text-[#888] bg-gray-50 dark:bg-white/[0.03] whitespace-nowrap">
+                                            {cat}
+                                        </span>
+                                    ))}
+                                </div>
                             )}
 
 							{/* Separator Line */}
-							<div className={`w-full h-px bg-gray-100 dark:bg-white/[0.06] ${isCompressed ? 'my-0.5' : 'my-1'}`} />
+							<div className="w-full h-px bg-gray-100 dark:bg-white/[0.06]" />
 
-							<div className="flex flex-wrap items-center justify-between gap-4 text-[13px] font-medium text-gray-500 dark:text-[#888]">
+							<div className="flex flex-wrap items-center justify-between gap-2 text-[12px] font-medium text-gray-500 dark:text-[#888]">
 								<div className="flex items-center gap-4">
 									<div className="flex items-center gap-1.5" title="Next Review Date">
 										<Calendar className="w-3.5 h-3.5 opacity-70" strokeWidth={2} />
@@ -176,7 +180,7 @@ export default React.memo(function ProblemReviewCard({ problem, onUpdate, isSele
 						</div>
 
 						{/* Right Side: Status Badges and Actions */}
-						<div className={`flex flex-col items-end justify-between gap-4 self-stretch pt-2 ${!isCompressed ? 'md:w-auto md:pt-0' : 'w-full'}`}>
+						<div className={`flex flex-col items-end justify-between gap-2 self-stretch ${!isCompressed ? 'md:w-auto' : 'w-full'}`}>
 							
 							{/* Badges on Desktop */}
                             {!isCompressed && (

@@ -104,11 +104,11 @@ export default function ProblemsClient({
     const totalPages = Math.max(1, Math.ceil(totalProblems / pageSize))
 
     return (
-        <div className="h-[calc(100dvh-5.5rem)] overflow-hidden -my-8">
-            <div className="h-full max-w-6xl mx-auto px-4 py-4 flex flex-col">
-                <div className={`grid gap-4 h-full min-h-0 ${selectedProblem || showFilters ? "grid-cols-1 lg:grid-cols-[400px_1fr]" : "grid-cols-1 lg:grid-cols-[400px]"}`}>
+        <div className="lg:h-[calc(100dvh-5.5rem)] lg:overflow-hidden -my-8">
+            <div className="lg:h-full max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4 lg:gap-0">
+                <div className={`grid gap-4 lg:h-full lg:min-h-0 ${selectedProblem || showFilters ? "grid-cols-1 lg:grid-cols-[400px_1fr]" : "grid-cols-1 lg:grid-cols-[400px]"}`}>
                     {/* Left: problem list */}
-                    <div className="flex flex-col bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] backdrop-blur-3xl rounded-[16px] shadow-2xl relative overflow-hidden h-full min-h-0">
+                    <div className="flex flex-col bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.08] backdrop-blur-3xl rounded-[16px] shadow-2xl relative overflow-hidden lg:h-full lg:min-h-0">
                         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/[0.12] to-transparent mix-blend-overlay pointer-events-none" />
                         <div className="shrink-0 px-6 pt-6">
                             <h1 className="text-2xl italic mb-4 text-gray-900 dark:text-white [font-family:var(--font-playfair)]">
@@ -117,14 +117,13 @@ export default function ProblemsClient({
                             <SearchBar
                                 problems={isCacheLoaded ? allProblemsCache : initialPaginatedProblems}
                                 onResults={handleSearchResults}
-                                disabled={false}
                                 showFilters={showFilters}
                                 onShowFilters={setShowFilters}
                                 filterPanelContainer={filterContainer}
                             />
                         </div>
 
-                        <div className="flex-1 overflow-y-auto min-h-0 px-3 pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        <div className="lg:flex-1 lg:overflow-y-auto lg:min-h-0 px-3 pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             {displayProblems.map((problem) => (
                                 <ProblemCard
                                     key={problem.id}
@@ -194,7 +193,7 @@ export default function ProblemsClient({
                             />
                         </div>
                     ) : selectedProblem ? (
-                        <div className="h-full min-h-0">
+                        <div className="lg:h-full lg:min-h-0">
                             <ProblemDetail
                                 key={selectedProblem.id}
                                 problem={selectedProblem}

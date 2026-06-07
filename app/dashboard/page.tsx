@@ -131,7 +131,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             acc[key].problems.push({ id: p.id, name: p.name, platform: p.platform, difficulty: p.difficulty, platformRating: p.platformRating, link: p.link })
         }
 		return acc
-	}, {} as Record<string, { count: number, problems: { id: string, name: string, platform: string | null, difficulty: string, platformRating?: number | null }[] }>)
+	}, {} as Record<string, { count: number, problems: { id: string, name: string, platform: string | null, difficulty: string, platformRating?: number | null, link: string | null }[] }>)
 
 	const heatmapArray = Object.entries(heatmap)
       // PERFORMANCE BOOST: Strip all empty days from the payload explicitly, and bound the historical depth to 90 days.

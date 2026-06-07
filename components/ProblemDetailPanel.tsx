@@ -3,10 +3,22 @@
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeClassNames from "rehype-class-names"
-import rehypeHighlight from "rehype-highlight"
-import { useState, useEffect } from "react"
+import { Light as SyntaxHighlighter } from "react-syntax-highlighter"
+import cpp from "react-syntax-highlighter/dist/esm/languages/hljs/cpp"
+import python from "react-syntax-highlighter/dist/esm/languages/hljs/python"
+import java from "react-syntax-highlighter/dist/esm/languages/hljs/java"
+import javascript from "react-syntax-highlighter/dist/esm/languages/hljs/javascript"
+import { githubGist, stackoverflowDark } from "react-syntax-highlighter/dist/esm/styles/hljs"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import debounce from "lodash.debounce"
+SyntaxHighlighter.registerLanguage("cpp", cpp)
+SyntaxHighlighter.registerLanguage("c++", cpp)
+SyntaxHighlighter.registerLanguage("python", python)
+SyntaxHighlighter.registerLanguage("java", java)
+SyntaxHighlighter.registerLanguage("javascript", javascript)
+SyntaxHighlighter.registerLanguage("js", javascript)
 import { Button } from "@/components/ui/button"
-import { Loader2, XIcon, LayoutPanelLeft, SaveIcon, Activity } from "lucide-react"
+import { Loader2, XIcon, LayoutPanelLeft, SaveIcon, Activity, Check } from "lucide-react"
 import { toast } from "sonner"
 import type { Problem } from "@prisma/client"
 import { ResponsiveContainer, LineChart, Line, YAxis, Tooltip } from "recharts"
@@ -17,40 +29,66 @@ interface ProblemDetailPanelProps {
     onUpdate: (id: string, updates: Partial<Problem>) => void
 }
 
-const classNames = {
-    h1: "text-2xl font-bold mb-4",
-    h2: "text-xl font-semibold mb-3",
-    h3: "text-lg font-semibold mb-2",
-    p: "mb-3 text-base leading-relaxed text-gray-800 dark:text-[rgba(255,255,255,0.85)]",
-    ul: "list-disc pl-5 mb-3 space-y-2",
-    ol: "list-decimal pl-5 mb-3 space-y-2",
-    li: "text-base text-gray-800 dark:text-[rgba(255,255,255,0.85)]",
-    code: "bg-muted/40 px-1.5 py-0.5 rounded text-sm font-mono",
-    pre: "bg-gray-100 dark:bg-[#0f172a] border dark:border-white/[0.05] p-5 rounded-xl text-[13px] font-mono overflow-x-auto mb-5",
-    blockquote: "border-l-4 border-gray-300 dark:border-white/[0.1] pl-4 italic mb-3 text-gray-600 dark:text-gray-400",
+const MD_CLASSES = {
+    h1: "text-xl font-bold mb-3",
+    h2: "text-lg font-semibold mb-2",
+    h3: "text-base font-semibold mb-2",
+    p: "mb-2.5 text-[13px] leading-relaxed text-gray-800 dark:text-[rgba(255,255,255,0.8)]",
+    ul: "list-disc pl-4 mb-2.5 space-y-1",
+    ol: "list-decimal pl-4 mb-2.5 space-y-1",
+    li: "text-[13px] text-gray-800 dark:text-[rgba(255,255,255,0.8)]",
+    blockquote: "border-l-2 border-gray-200 dark:border-white/[0.1] pl-3 italic mb-2.5 text-gray-500 dark:text-[#888]",
     strong: "font-semibold text-gray-900 dark:text-white",
     em: "italic",
-    del: "line-through",
-    table: "w-full border-collapse border border-gray-200 dark:border-white/[0.08] mb-4 text-sm",
-    thead: "bg-gray-50 dark:bg-white/[0.03]",
-    tr: "border-b border-gray-200 dark:border-white/[0.08]",
-    th: "border border-gray-200 dark:border-white/[0.08] p-2 text-left font-semibold",
-    td: "border border-gray-200 dark:border-white/[0.08] p-2",
 }
 
-const MarkdownContent = ({ content }: { content: string | null }) => (
-    <div className="markdown-content">
-        <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[
-                [rehypeHighlight, { ignoreMissing: true }],
-                [rehypeClassNames, classNames],
-            ]}
-        >
-            {content || "*No content available.*"}
-        </ReactMarkdown>
-    </div>
-)
+function MarkdownContent({ content }: { content: string | null }) {
+    const [isDark, setIsDark] = useState(false)
+    useEffect(() => {
+        const check = () => setIsDark(document.documentElement.classList.contains("dark"))
+        check()
+        const observer = new MutationObserver(check)
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+        return () => observer.disconnect()
+    }, [])
+    return (
+        <div style={{ fontFeatureSettings: '"liga" 1, "kern" 1, "calt" 0' }}>
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[[rehypeClassNames, MD_CLASSES]]}
+                components={{
+                    code({ className, children, ...props }) {
+                        const match = /language-(\w+)/.exec(className || "")
+                        const code = String(children).replace(/\n$/, "")
+                        const isBlock = code.includes("\n") || match
+                        if (!isBlock) {
+                            return <code className="bg-gray-100 dark:bg-white/[0.06] px-1 py-0.5 rounded text-[12px] [font-family:var(--font-fira-code)] [font-variant-ligatures:none]" {...props}>{children}</code>
+                        }
+                        return (
+                            <SyntaxHighlighter
+                                language={match?.[1] || "cpp"}
+                                style={isDark ? stackoverflowDark : githubGist}
+                                customStyle={{
+                                    margin: "0 0 12px 0",
+                                    borderRadius: "8px",
+                                    fontSize: "12px",
+                                    fontFamily: "var(--font-fira-code)",
+                                    fontVariantLigatures: "none",
+                                    border: isDark ? "1px solid rgba(255,255,255,0.05)" : "1px solid #e5e7eb",
+                                    overflowX: "auto",
+                                }}
+                            >
+                                {code}
+                            </SyntaxHighlighter>
+                        )
+                    },
+                }}
+            >
+                {content || "*Nothing here yet.*"}
+            </ReactMarkdown>
+        </div>
+    )
+}
 
 export default function ProblemDetailPanel({ problem, onClose, onUpdate }: ProblemDetailPanelProps) {
     const [notesMode, setNotesMode] = useState<"view" | "edit">("view")
@@ -88,49 +126,65 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
 
     const curveData = getCurveData();
 
-    const handleSaveNotes = async () => {
+    const saveNotes = useCallback(async (notes: string, mistakes: string) => {
         setSavingNotes(true)
         try {
             const res = await fetch(`/api/problem/${problem.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    notes: editNotes,
-                    mistakesMade: editMistakes,
-                }),
+                body: JSON.stringify({ notes, mistakesMade: mistakes }),
             })
             if (!res.ok) throw new Error("Failed to save notes")
             const updated = await res.json()
-            toast.success("Notes saved successfully")
             onUpdate(problem.id, updated)
-            setNotesMode("view")
         } catch {
             toast.error("Failed to save notes")
         } finally {
             setSavingNotes(false)
         }
+    }, [problem.id, onUpdate])
+
+    const debouncedSave = useMemo(
+        () => debounce((notes: string, mistakes: string) => saveNotes(notes, mistakes), 2000),
+        [saveNotes]
+    )
+
+    useEffect(() => {
+        if (editNotes !== (problem.notes || "") || editMistakes !== (problem.mistakesMade || "")) {
+            debouncedSave(editNotes, editMistakes)
+        }
+        return () => debouncedSave.cancel()
+    }, [editNotes, editMistakes])
+
+    const handleSaveNotes = async () => {
+        debouncedSave.cancel()
+        await saveNotes(editNotes, editMistakes)
+        setNotesMode("view")
     }
 
     return (
         <div className="flex flex-col h-full w-full bg-white dark:bg-[#0a0a0a] relative text-[14px]">
             {/* Header Sticky Strip */}
             <div className="sticky top-0 z-10 flex-shrink-0 p-5 md:p-6 border-b border-gray-100 dark:border-white/[0.05] flex flex-row items-center justify-between dark:bg-[#0a0a0a]/80 bg-white/80 backdrop-blur-xl">
-                <div className="flex items-center gap-3">
-                    <LayoutPanelLeft className="w-4 h-4 text-gray-400 dark:text-[#666]" strokeWidth={2} />
+                <div className="flex items-center gap-3 min-w-0">
+                    <LayoutPanelLeft className="w-4 h-4 text-gray-400 dark:text-[#666] shrink-0" strokeWidth={2} />
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight m-0 line-clamp-1">
                         {problem.name}
                     </h2>
+                    {savingNotes
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500 shrink-0" />
+                        : null}
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex bg-gray-100 dark:bg-white/[0.05] rounded-xl p-1 border border-transparent dark:border-white/[0.05]">
                         <button
-                            className={`px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-lg transition-all ${notesMode === 'view' ? 'bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#666] hover:text-gray-700 dark:hover:text-white'}`}
+                            className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all ${notesMode === 'view' ? 'bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#666] hover:text-gray-700 dark:hover:text-white'}`}
                             onClick={() => setNotesMode('view')}
                         >
                             Preview
                         </button>
                         <button
-                            className={`px-4 py-1.5 text-[12px] font-bold uppercase tracking-wider rounded-lg transition-all ${notesMode === 'edit' ? 'bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#666] hover:text-gray-700 dark:hover:text-white'}`}
+                            className={`px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all ${notesMode === 'edit' ? 'bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-[#666] hover:text-gray-700 dark:hover:text-white'}`}
                             onClick={() => setNotesMode('edit')}
                         >
                             Edit
@@ -145,10 +199,10 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
             {/* Scrollable Content Body */}
             <div className="flex-1 overflow-auto p-6 md:p-10 pb-32">
                 {notesMode === "view" ? (
-                    <div className="max-w-3xl mx-auto flex flex-col gap-10">
+                    <div className="max-w-3xl mx-auto flex flex-col gap-10 min-w-0 overflow-hidden">
                         <section className="space-y-4">
-                            <h3 className="font-bold text-[14px] text-gray-400 dark:text-[#555] tracking-[0.2em] uppercase flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-blue-500/40" /> Documentation
+                            <h3 className="text-[15px] text-gray-400 dark:text-[#555] [font-family:var(--font-merriweather)]">
+                                Documentation
                             </h3>
                             <div className="pl-5 border-l-2 border-gray-100 dark:border-white/[0.03]">
                                 <MarkdownContent content={editNotes} />
@@ -156,8 +210,8 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
                         </section>
 
                         <section className="space-y-4">
-                            <h3 className="font-bold text-[14px] text-gray-400 dark:text-[#555] tracking-[0.2em] uppercase flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-rose-500/40" /> Mistakes Made
+                            <h3 className="text-[15px] text-gray-400 dark:text-[#555] [font-family:var(--font-merriweather)]">
+                                Mistakes Made
                             </h3>
                             <div className="pl-5 border-l-2 border-gray-100 dark:border-white/[0.03]">
                                 <MarkdownContent content={editMistakes} />
@@ -215,9 +269,7 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
                 ) : (
                     <div className="flex flex-col gap-6 h-full">
                         <div className="space-y-2 flex flex-col flex-1 min-h-[250px]">
-                            <label className="font-semibold text-[13px] text-gray-400 dark:text-[#888] tracking-wide flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[rgba(255,255,255,0.4)]" /> Documentation (Markdown)
-                            </label>
+                            <label className="text-[15px] text-gray-400 dark:text-[#555] [font-family:var(--font-merriweather)]">Documentation</label>
                             <textarea
                                 value={editNotes}
                                 onChange={(e) => setEditNotes(e.target.value)}
@@ -226,9 +278,7 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
                             />
                         </div>
                         <div className="space-y-2 flex flex-col flex-1 min-h-[250px]">
-                            <label className="font-semibold text-[13px] text-gray-400 dark:text-[#888] tracking-wide flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500/80" /> Mistakes (Markdown)
-                            </label>
+                            <label className="text-[15px] text-gray-400 dark:text-[#555] [font-family:var(--font-merriweather)]">Mistakes Made</label>
                             <textarea
                                 value={editMistakes}
                                 onChange={(e) => setEditMistakes(e.target.value)}
