@@ -54,7 +54,14 @@ interface Contest {
     id: number | string;
     name: string;
     startTimeSeconds: number;
+    platform: "codeforces" | "leetcode";
+    url: string;
 }
+
+const CONTEST_PLATFORM_STYLES = {
+    codeforces: { color: "#1F8ACB", label: "CF", title: "Codeforces" },
+    leetcode: { color: "#FFA116", label: "LC", title: "LeetCode" },
+} as const;
 
 function UpcomingContests() {
     const [contests, setContests] = useState<Contest[]>([])
@@ -86,25 +93,28 @@ function UpcomingContests() {
                 <span className="mr-2">🏆</span> Upcoming Contests
             </h2>
             <div className="space-y-2">
-                {contests.map((c) => (
-                    <div key={c.id} className="flex flex-col p-3 bg-gray-50/50 dark:bg-white/[0.02] border border-transparent dark:border-white/[0.04] rounded-[10px] group hover:dark:bg-white/[0.04] transition-colors">
-                        <div className="flex justify-between items-start mb-1">
-                            <span className="text-[13px] font-medium text-gray-900 dark:text-[rgba(255,255,255,0.9)] line-clamp-1 pr-2 leading-tight">{c.name}</span>
-                            <a href={`https://codeforces.com/contest/${c.id}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-semibold bg-[#1F8ACB]/10 text-[#1F8ACB] hover:bg-[#1F8ACB]/20 px-2 py-0.5 rounded-[4px] tracking-wide flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-all uppercase">
-                                Join <span className="ml-1">→</span>
-                            </a>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                            <span className="text-[13px] font-medium text-gray-500 dark:text-[rgba(255,255,255,0.5)]">
-                                {getRelativeTime(c.startTimeSeconds)}
-                            </span>
-                            <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <div className="w-1.5 h-1.5 rounded-full bg-[#1F8ACB] shadow-[0_0_8px_rgba(31,138,203,0.6)]" title="Codeforces" />
-                                <span className="text-[9px] uppercase font-semibold text-[#1F8ACB]">CF</span>
+                {contests.map((c) => {
+                    const style = CONTEST_PLATFORM_STYLES[c.platform];
+                    return (
+                        <div key={`${c.platform}-${c.id}`} className="flex flex-col p-3 bg-gray-50/50 dark:bg-white/[0.02] border border-transparent dark:border-white/[0.04] rounded-[10px] group hover:dark:bg-white/[0.04] transition-colors">
+                            <div className="flex justify-between items-start mb-1">
+                                <span className="text-[13px] font-medium text-gray-900 dark:text-[rgba(255,255,255,0.9)] line-clamp-1 pr-2 leading-tight">{c.name}</span>
+                                <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: `${style.color}1A`, color: style.color }} className="text-[10px] font-semibold hover:opacity-80 px-2 py-0.5 rounded-[4px] tracking-wide flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-all uppercase">
+                                    Join <span className="ml-1">→</span>
+                                </a>
+                            </div>
+                            <div className="flex justify-between items-center mt-1">
+                                <span className="text-[13px] font-medium text-gray-500 dark:text-[rgba(255,255,255,0.5)]">
+                                    {getRelativeTime(c.startTimeSeconds)}
+                                </span>
+                                <div className="flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: style.color, boxShadow: `0 0 8px ${style.color}99` }} title={style.title} />
+                                    <span className="text-[9px] uppercase font-semibold" style={{ color: style.color }}>{style.label}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     )
