@@ -164,22 +164,32 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
         [saveNotes]
     )
 
+    // `debouncedSave` is recreated whenever `saveNotes` changes identity
+    // (e.g. the parent passes a fresh `onUpdate` closure each render). Stash
+    // the latest one in a ref so the effects below can use it without listing
+    // it as a dependency — otherwise every identity change would re-fire the
+    // save effect, triggering onUpdate, a re-render, a new identity... a loop.
+    const debouncedSaveRef = useRef(debouncedSave)
+    useEffect(() => {
+        debouncedSaveRef.current = debouncedSave
+    }, [debouncedSave])
+
     useEffect(() => {
         if (editNotes !== (problem.notes || "") || editMistakes !== (problem.mistakesMade || "")) {
             // lodash debounce resets its own timer on each call, so no
             // explicit cancel is needed (and would race the flush-on-teardown
             // effect below, turning it into a no-op).
-            debouncedSave(editNotes, editMistakes)
+            debouncedSaveRef.current(editNotes, editMistakes)
         }
-    }, [editNotes, editMistakes, debouncedSave])
+    }, [editNotes, editMistakes])
 
-    // Flush any pending save before we navigate away from this problem (or
-    // unmount), so in-flight edits aren't silently dropped by the cancel above.
+    // Flush any pending save when the panel unmounts or we switch to a
+    // different problem, so in-flight edits aren't silently dropped.
     useEffect(() => {
         return () => {
-            debouncedSave.flush()
+            debouncedSaveRef.current.flush()
         }
-    }, [debouncedSave])
+    }, [problem.id])
 
     const handleSaveNotes = async () => {
         debouncedSave.cancel()
