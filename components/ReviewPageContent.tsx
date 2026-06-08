@@ -58,6 +58,13 @@ export default function ReviewPageContent({
 		router.refresh()
 	}, [router, selectedId])
 
+	// Stable identity so ProblemDetailPanel's autosave effects (which key off
+	// this callback's identity via `saveNotes`/`debouncedSave`) don't get torn
+	// down and rebuilt on every render.
+	const handleNotesUpdate = useCallback((id: string, updates: Partial<Problem>) => {
+		handleProblemUpdate(id, updates, false)
+	}, [handleProblemUpdate])
+
 	if (error) {
 		return <p className="text-center text-red-500 py-8">Error: {error}</p>
 	}
@@ -166,7 +173,7 @@ export default function ReviewPageContent({
 									<ProblemDetailPanel
 										problem={selectedProblem}
 										onClose={() => setSelectedId(null)}
-										onUpdate={(id, updates) => handleProblemUpdate(id, updates, false)}
+										onUpdate={handleNotesUpdate}
 									/>
 								</div>
 							</motion.div>
