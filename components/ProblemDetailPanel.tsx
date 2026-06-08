@@ -9,7 +9,7 @@ import python from "react-syntax-highlighter/dist/esm/languages/hljs/python"
 import java from "react-syntax-highlighter/dist/esm/languages/hljs/java"
 import javascript from "react-syntax-highlighter/dist/esm/languages/hljs/javascript"
 import { githubGist, stackoverflowDark } from "react-syntax-highlighter/dist/esm/styles/hljs"
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import debounce from "lodash.debounce"
 SyntaxHighlighter.registerLanguage("cpp", cpp)
 SyntaxHighlighter.registerLanguage("c++", cpp)
@@ -96,9 +96,24 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
     const [editMistakes, setEditMistakes] = useState(problem.mistakesMade || "")
     const [savingNotes, setSavingNotes] = useState(false)
 
+    // Tracks the last value we know the server has (either from the initial
+    // load or from our own successful save), so we can tell apart "the prop
+    // changed because of our own round-trip" from "the prop changed because
+    // we switched problems / someone else updated it elsewhere".
+    const lastSyncedRef = useRef({ notes: problem.notes || "", mistakes: problem.mistakesMade || "" })
+
     useEffect(() => {
-        setEditNotes(problem.notes || "")
-        setEditMistakes(problem.mistakesMade || "")
+        const serverNotes = problem.notes || ""
+        const serverMistakes = problem.mistakesMade || ""
+        const synced = lastSyncedRef.current
+
+        // Only overwrite local edits if they still match what we last synced,
+        // i.e. the user hasn't typed anything new since then. Otherwise we'd
+        // clobber in-flight edits with the value we just saved/echoed back.
+        setEditNotes((current) => (current === synced.notes ? serverNotes : current))
+        setEditMistakes((current) => (current === synced.mistakes ? serverMistakes : current))
+
+        lastSyncedRef.current = { notes: serverNotes, mistakes: serverMistakes }
     }, [problem.notes, problem.mistakesMade, problem.id])
 
     const getRetrievability = (lastReview: Date, stability: number) => {
@@ -151,10 +166,20 @@ export default function ProblemDetailPanel({ problem, onClose, onUpdate }: Probl
 
     useEffect(() => {
         if (editNotes !== (problem.notes || "") || editMistakes !== (problem.mistakesMade || "")) {
+            // lodash debounce resets its own timer on each call, so no
+            // explicit cancel is needed (and would race the flush-on-teardown
+            // effect below, turning it into a no-op).
             debouncedSave(editNotes, editMistakes)
         }
-        return () => debouncedSave.cancel()
-    }, [editNotes, editMistakes])
+    }, [editNotes, editMistakes, debouncedSave])
+
+    // Flush any pending save before we navigate away from this problem (or
+    // unmount), so in-flight edits aren't silently dropped by the cancel above.
+    useEffect(() => {
+        return () => {
+            debouncedSave.flush()
+        }
+    }, [debouncedSave])
 
     const handleSaveNotes = async () => {
         debouncedSave.cancel()
