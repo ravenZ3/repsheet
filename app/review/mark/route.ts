@@ -33,9 +33,9 @@ export async function POST(req: NextRequest) {
       select: {
         stability: true,
         fsrsDifficulty: true,
+        fsrsState: true,
         reviewCount: true,
         nextReviewDate: true,
-
         lastRating: true,
         lastReview: true,
       },
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
 
     const now = new Date();
     const card = new Card();
+    card.state = problem.fsrsState ?? 0;
     card.due = problem.nextReviewDate ?? now;
     card.last_review = problem.lastReview ?? now;
     card.stability = problem.stability ?? 2.5;
