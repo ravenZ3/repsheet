@@ -52,7 +52,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 	const daysToClear = limit > 0 && backlog > 0 ? Math.ceil(backlog / limit) : 0;
 
 	const progress = {
-		dueToday: cappedDue,
+		dueToday: Math.max(0, cappedDue - reviewedToday),
 		reviewedToday: reviewedToday,
 		backlog: backlog,
 		daysToClear: daysToClear,

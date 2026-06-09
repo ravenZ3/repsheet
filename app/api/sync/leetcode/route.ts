@@ -105,6 +105,7 @@ export async function POST() {
           difficulty: difficulty as "Easy" | "Medium" | "Hard",
           category: tags,
           dateSolved: new Date(Number(sub.timestamp) * 1000),
+          nextReviewDate: new Date(Number(sub.timestamp) * 1000),
           isStuck: false,
           reviewCount: 0,
         }

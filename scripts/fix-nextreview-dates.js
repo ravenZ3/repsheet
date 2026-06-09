@@ -54,6 +54,7 @@ async function main() {
     }
 
     const fsrs = new FSRS();
+    fsrs.p.maximum_interval = 365;
     const retention = retentionByUser[p.userId];
     if (retention) fsrs.p.request_retention = retention;
 

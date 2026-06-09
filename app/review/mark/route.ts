@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
 
     // --- Your FSRS logic is great, no changes needed here ---
     const fsrs = new FSRS();
+    fsrs.p.maximum_interval = 365;
     if (userSettings?.fsrsTargetRetention) {
         fsrs.p.request_retention = userSettings.fsrsTargetRetention;
     }

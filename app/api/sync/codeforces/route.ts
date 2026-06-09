@@ -96,6 +96,7 @@ export async function POST() {
           difficulty: difficulty as "Easy" | "Medium" | "Hard",
           category: p.tags || [],
           dateSolved: new Date(Number(sub.creationTimeSeconds) * 1000),
+          nextReviewDate: new Date(Number(sub.creationTimeSeconds) * 1000),
           isStuck: false,
           reviewCount: 0,
           platformRating: rating,
