@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import Link from "next/link"
-import { CloverIcon } from "lucide-react"
+import { Repeat, ListChecks, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
 	Accordion,
@@ -40,19 +40,19 @@ export default async function Home() {
 					<Link href="/review" passHref>
 						<Button className="mx-2 flex items-center gap-2">
 							<span>Start Reviewing</span>
-							<CloverIcon />
+							<Repeat />
 						</Button>
 					</Link>
 					<Link href="/problems" passHref>
 						<Button className="mx-2 flex items-center gap-2">
 							<span>All Problems</span>
-							<CloverIcon />
+							<ListChecks />
 						</Button>
 					</Link>
 					<Link href="/add" passHref>
 						<Button className="mx-2 flex items-center gap-2">
 							<span>Add a Problem</span>
-							<CloverIcon />
+							<Plus />
 						</Button>
 					</Link>
 				</section>
