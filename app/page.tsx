@@ -68,15 +68,15 @@ export default async function Home() {
 						<AccordionTrigger>how fsrs works</AccordionTrigger>
 						<AccordionContent className="flex flex-col gap-4 text-sm text-gray-700 dark:text-gray-300">
 							<p>
-								fsrs (full spaced repetition system) uses a
-								memory model called dhp — it looks at
-								difficulty, half-life, and recall probability to
+								fsrs (free spaced repetition scheduler) uses a
+								memory model called dsr. it looks at
+								difficulty, stability, and recall probability to
 								decide when you should review a coding problem.
 							</p>
 
 							<p>
 								recall probability tracks how likely you are to
-								remember something. half-life is how long that
+								remember something. stability is how long that
 								memory lasts. difficulty shows how tough a
 								problem is for you. fsrs uses all three to plan
 								your reviews.
@@ -93,26 +93,27 @@ export default async function Home() {
 
 					<AccordionItem value="item-2">
 						<AccordionTrigger>
-							why fsrs is better than anki
+							fsrs vs the old sm-2 algorithm
 						</AccordionTrigger>
 						<AccordionContent className="flex flex-col gap-4 text-sm text-gray-700 dark:text-gray-300">
 							<p>
-								fsrs is smarter than anki&apos;s old sm-2
-								algorithm. it doesn&apos;t use fixed intervals —
-								it adapts based on how you&apos;re doing and
-								when you last reviewed.
+								fsrs is a major upgrade over sm-2, the fixed
+								interval algorithm anki relied on for years. it
+								adapts based on how you&apos;re doing and when
+								you last reviewed, instead of jumping through
+								preset intervals.
 							</p>
 
 							<p>
 								it saves time, adjusts difficulty in real time,
-								and targets recall goals like 90%. anki
-								can&apos;t do all that with its static approach.
+								and targets recall goals like 90%. sm-2&apos;s
+								static approach can&apos;t do any of that.
 							</p>
 
 							<p className="bg-gray-100 dark:bg-gray-800 rounded-md p-3">
-								overall, fsrs just understands you better.
-								it&apos;s faster, more efficient, and fits how
-								real learning works.
+								fsrs is the same algorithm anki itself adopted
+								as an option in 2024. repsheet uses it by
+								default, so you get it from day one.
 							</p>
 						</AccordionContent>
 					</AccordionItem>
