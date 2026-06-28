@@ -193,7 +193,7 @@ export default function ProblemsClient({
                             />
                         </div>
                     ) : selectedProblem ? (
-                        <div className="lg:h-full lg:min-h-0">
+                        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-50 dark:bg-black p-3 lg:relative lg:inset-auto lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0 lg:h-full lg:min-h-0">
                             <ProblemDetail
                                 problem={selectedProblem}
                                 onUpdate={handleProblemUpdate}
