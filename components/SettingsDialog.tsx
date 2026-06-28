@@ -17,6 +17,7 @@ export default function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(20);
   const [targetRetention, setTargetRetention] = useState(0.90);
+  const [showPatterns, setShowPatterns] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [leetcodeUsername, setLeetcodeUsername] = useState("");
@@ -36,6 +37,7 @@ export default function SettingsDialog() {
         .then((data) => {
           if (data.dailyReviewLimit) setLimit(data.dailyReviewLimit);
           if (data.fsrsTargetRetention) setTargetRetention(data.fsrsTargetRetention);
+          if (typeof data.showPatterns === 'boolean') setShowPatterns(data.showPatterns);
           if (data.leetcodeUsername) {
             setLeetcodeUsername(data.leetcodeUsername);
             setOriginalUsername(data.leetcodeUsername);
@@ -58,7 +60,7 @@ export default function SettingsDialog() {
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dailyReviewLimit: Number(limit), leetcodeUsername: leetcodeUsername.trim(), fsrsTargetRetention: targetRetention }),
+        body: JSON.stringify({ dailyReviewLimit: Number(limit), leetcodeUsername: leetcodeUsername.trim(), fsrsTargetRetention: targetRetention, showPatterns }),
       });
       if (!res.ok) throw new Error('Failed to save settings');
       toast.success('Settings saved successfully');
@@ -288,6 +290,27 @@ export default function SettingsDialog() {
                 <p className="text-[11px] text-gray-500 dark:text-[#555] mt-3 text-center px-4">
                   Automatically downloads your recent accepted submissions. Existing problems will not be overwritten.
                 </p>
+            </div>
+
+            <div className="w-full h-[1px] bg-gray-100 dark:bg-white/[0.06] my-4" />
+            <div className="w-full px-6 flex items-center justify-between gap-4">
+                <div>
+                    <label className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block">
+                      Pattern Explorer
+                    </label>
+                    <p className="text-[12px] text-gray-500 dark:text-[#555] mt-1 max-w-[240px]">
+                      Browse problems by technique with coverage and review health. Adds a Patterns page.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showPatterns}
+                    onClick={() => setShowPatterns((v) => !v)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${showPatterns ? 'bg-blue-600' : 'bg-gray-200 dark:bg-white/[0.1]'}`}
+                >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showPatterns ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
             </div>
 
         </div>
