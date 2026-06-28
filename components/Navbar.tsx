@@ -100,7 +100,7 @@ export default function Navbar() {
 
       {/* Mobile-only collapsible menu */}
       {isMenuOpen && (
-        <div className="md:hidden z-2 flex flex-col h-[100vh] items-start  px-4 pb-4 space-y-2 border-t border-gray-200 dark:border-gray-800">
+        <div className="md:hidden absolute left-0 right-0 top-full z-[60] flex flex-col items-start px-4 pt-3 pb-6 space-y-2 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-black shadow-lg">
           {status === 'loading' && (
             <div className="w-full py-4 text-center">
               <Loader2 className="mx-auto w-6 h-6 animate-spin text-gray-500" />

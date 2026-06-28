@@ -62,9 +62,6 @@ export default function RootLayout({
             <main className="flex-grow container mx-auto px-4 py-8">
               {children}
             </main>
-            <footer className="text-center p-4 text-sm text-gray-500 border-t border-gray-200 dark:border-gray-800">
-              RepSheet © * ravenZ3 {new Date().getFullYear()}
-            </footer>
           </div>
 
           <div className="fixed bottom-5 right-5 z-50">

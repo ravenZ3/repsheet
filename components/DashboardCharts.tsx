@@ -377,6 +377,22 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				</div>
 			</div>
 
+			{/* FSRS Progress pills — always on top */}
+			<div className="grid grid-cols-3 gap-2">
+				<div className="bg-white dark:bg-[#111] rounded-[12px] border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5">
+					<span className="text-[9px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">Due today</span>
+					<span className="text-[28px] leading-none font-bold [font-family:var(--font-merriweather)] text-gray-900 dark:text-gray-100">{progress.dueToday}</span>
+				</div>
+				<div className="bg-white dark:bg-[#111] rounded-[12px] border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5">
+					<span className="text-[9px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">Reviewed</span>
+					<span className="text-[28px] leading-none font-bold [font-family:var(--font-merriweather)] text-green-600 dark:text-green-400">{progress.reviewedToday}</span>
+				</div>
+				<div className="bg-white dark:bg-[#111] rounded-[12px] border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5">
+					<span className="text-[9px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">{progress.backlog > 0 ? `~${progress.daysToClear}d to clear` : "Backlog"}</span>
+					<span className={`text-[28px] leading-none font-bold [font-family:var(--font-merriweather)] ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>+{progress.backlog}</span>
+				</div>
+			</div>
+
 			<div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
 			{/* Col 0: Skills */}
 			<div className="xl:col-span-1">
@@ -386,24 +402,6 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 				</div>
 			</div>
 				<div className="xl:col-span-3 space-y-4">
-				{/* FSRS Progress UI Module */}
-			<div className="grid grid-cols-3 gap-2 sm:gap-3">
-				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
-					<p className="text-[34px] sm:text-[56px] md:text-[80px] leading-none [font-family:var(--font-merriweather)] text-gray-900 dark:text-gray-100 px-3 py-1.5 sm:px-4 sm:py-2 flex-1">{progress.dueToday}</p>
-					<p className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2 right-2 sm:bottom-2.5 sm:right-3">Due today</p>
-				</div>
-
-				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
-					<p className="text-[34px] sm:text-[56px] md:text-[80px] leading-none [font-family:var(--font-merriweather)] text-green-600 dark:text-green-400 px-3 py-1.5 sm:px-4 sm:py-2 flex-1">{progress.reviewedToday}</p>
-					<p className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2 right-2 sm:bottom-2.5 sm:right-3">Reviewed today</p>
-				</div>
-
-				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
-					<p className={`text-[34px] sm:text-[56px] md:text-[80px] leading-none [font-family:var(--font-merriweather)] px-3 py-1.5 sm:px-4 sm:py-2 flex-1 ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>+{progress.backlog}</p>
-					<p className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2 right-2 sm:bottom-2.5 sm:right-3">{progress.backlog > 0 ? `~${progress.daysToClear}d to clear` : "Backlog"}</p>
-				</div>
-			</div>
-
 			<div className="flex flex-col gap-5">
                 {/* Full Width Trend Chart */}
 				<div className="w-full flex flex-col bg-white dark:bg-[#111] p-4 pt-5 shadow-xl rounded-[16px] border border-gray-200 dark:border-white/[0.08]">
