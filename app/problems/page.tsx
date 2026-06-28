@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/authOptions"
 import { redirect } from "next/navigation"
 import prisma from "@/lib/prisma"
 import ProblemsClient from "./ProblemsClient"
+import OnboardingPanel from "@/components/OnboardingPanel"
 
 export default async function ProblemsPage({
 	searchParams,
@@ -29,6 +30,10 @@ export default async function ProblemsPage({
 		}),
 		prisma.problem.count({ where: { userId: session.user.id } }),
 	])
+
+	if (totalProblems === 0) {
+		return <OnboardingPanel />
+	}
 
 	return (
 		<div className="w-full">

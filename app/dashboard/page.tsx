@@ -5,11 +5,17 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/authOptions"
 import { redirect } from "next/navigation"
 import DashboardCharts from "@/components/DashboardCharts"
+import OnboardingPanel from "@/components/OnboardingPanel"
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ platform?: string }> }) {
 	const session = await getServerSession(authOptions)
 	if (!session || !session.user?.id) {
 		redirect("/login")
+	}
+
+	const totalProblemCount = await prisma.problem.count({ where: { userId: session.user.id } })
+	if (totalProblemCount === 0) {
+		return <OnboardingPanel />
 	}
 
     const resolvedParams = await searchParams;
