@@ -387,20 +387,20 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 			</div>
 				<div className="xl:col-span-3 space-y-4">
 				{/* FSRS Progress UI Module */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+			<div className="grid grid-cols-3 gap-2 sm:gap-3">
 				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
-					<p className="text-[80px] leading-none [font-family:var(--font-merriweather)] text-gray-900 dark:text-gray-100 px-4 py-2 flex-1">{progress.dueToday}</p>
-					<p className="text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2.5 right-3">Due today</p>
+					<p className="text-[34px] sm:text-[56px] md:text-[80px] leading-none [font-family:var(--font-merriweather)] text-gray-900 dark:text-gray-100 px-3 py-1.5 sm:px-4 sm:py-2 flex-1">{progress.dueToday}</p>
+					<p className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2 right-2 sm:bottom-2.5 sm:right-3">Due today</p>
 				</div>
 
 				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
-					<p className="text-[80px] leading-none [font-family:var(--font-merriweather)] text-green-600 dark:text-green-400 px-4 py-2 flex-1">{progress.reviewedToday}</p>
-					<p className="text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2.5 right-3">Reviewed today</p>
+					<p className="text-[34px] sm:text-[56px] md:text-[80px] leading-none [font-family:var(--font-merriweather)] text-green-600 dark:text-green-400 px-3 py-1.5 sm:px-4 sm:py-2 flex-1">{progress.reviewedToday}</p>
+					<p className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2 right-2 sm:bottom-2.5 sm:right-3">Reviewed today</p>
 				</div>
 
 				<div className="bg-white dark:bg-[#111] rounded-[14px] shadow-xl border border-gray-200 dark:border-white/[0.08] font-sans tracking-tight relative flex overflow-hidden min-h-[90px]">
-					<p className={`text-[80px] leading-none [font-family:var(--font-merriweather)] px-4 py-2 flex-1 ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>+{progress.backlog}</p>
-					<p className="text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2.5 right-3">{progress.backlog > 0 ? `~${progress.daysToClear}d to clear` : "Backlog"}</p>
+					<p className={`text-[34px] sm:text-[56px] md:text-[80px] leading-none [font-family:var(--font-merriweather)] px-3 py-1.5 sm:px-4 sm:py-2 flex-1 ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>+{progress.backlog}</p>
+					<p className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] absolute bottom-2 right-2 sm:bottom-2.5 sm:right-3">{progress.backlog > 0 ? `~${progress.daysToClear}d to clear` : "Backlog"}</p>
 				</div>
 			</div>
 
