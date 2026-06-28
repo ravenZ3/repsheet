@@ -193,12 +193,20 @@ export default function ProblemsClient({
                             />
                         </div>
                     ) : selectedProblem ? (
-                        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-50 dark:bg-black p-3 lg:relative lg:inset-auto lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0 lg:h-full lg:min-h-0">
-                            <ProblemDetail
-                                problem={selectedProblem}
-                                onUpdate={handleProblemUpdate}
-                                onClose={handleClose}
-                            />
+                        <div
+                            className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/40 backdrop-blur-sm lg:relative lg:inset-auto lg:z-auto lg:flex lg:items-stretch lg:justify-stretch lg:p-0 lg:bg-transparent lg:backdrop-blur-none lg:h-full lg:min-h-0"
+                            onClick={handleClose}
+                        >
+                            <div
+                                className="w-full max-h-[90vh] overflow-y-auto lg:max-h-none lg:overflow-visible lg:h-full"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <ProblemDetail
+                                    problem={selectedProblem}
+                                    onUpdate={handleProblemUpdate}
+                                    onClose={handleClose}
+                                />
+                            </div>
                         </div>
                     ) : (
                         <div className="hidden lg:flex items-center justify-center text-gray-400 dark:text-[#555] text-[13px] font-medium opacity-40">

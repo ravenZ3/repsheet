@@ -33,7 +33,7 @@ export default function PatternsClient({ patterns }: { patterns: PatternView[] }
               <AccordionTrigger className="hover:no-underline">
                 <div className="flex-1 min-w-0 pr-4">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-[14px] font-medium text-gray-900 dark:text-[rgba(255,255,255,0.9)] truncate">
+                    <span className="text-[14px] font-medium text-gray-900 dark:text-[rgba(255,255,255,0.9)] break-words">
                       {pat.name}
                     </span>
                     <span className="text-[12px] text-gray-500 dark:text-[#888] shrink-0 tabular-nums">
