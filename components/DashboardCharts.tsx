@@ -99,7 +99,7 @@ function UpcomingContests() {
                         <div key={`${c.platform}-${c.id}`} className="flex flex-col p-3 bg-gray-50/50 dark:bg-white/[0.02] border border-transparent dark:border-white/[0.04] rounded-[10px] group hover:dark:bg-white/[0.04] transition-colors">
                             <div className="flex justify-between items-start mb-1">
                                 <span className="text-[13px] font-medium text-gray-900 dark:text-[rgba(255,255,255,0.9)] line-clamp-1 pr-2 leading-tight">{c.name}</span>
-                                <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: `${style.color}1A`, color: style.color }} className="text-[10px] font-semibold hover:opacity-80 px-2 py-0.5 rounded-[4px] tracking-wide flex-shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-all uppercase">
+                                <a href={c.url} target="_blank" rel="noopener noreferrer" style={{ backgroundColor: `${style.color}1A`, color: style.color }} className="text-[10px] font-semibold hover:opacity-80 px-2 py-0.5 rounded-[4px] tracking-wide flex-shrink-0 flex items-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all uppercase">
                                     Join <span className="ml-1">→</span>
                                 </a>
                             </div>
@@ -365,7 +365,7 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 						<button
 							key={plat}
 							onClick={() => handlePlatformChange(plat)}
-							className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-[6px] transition-all duration-200 ${
+							className={`px-2.5 sm:px-4 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-[6px] transition-all duration-200 ${
 								currentPlatform === plat
 									? "bg-white dark:bg-white/[0.08] shadow-sm text-gray-900 dark:text-white"
 									: "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
