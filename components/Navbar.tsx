@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { Loader2, MenuIcon, X } from 'lucide-react'; // Import Menu and X icons
 import SettingsDialog from './SettingsDialog';
@@ -10,6 +10,15 @@ export default function Navbar() {
   const pathname = usePathname();
   const { status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false); // State to manage the mobile menu
+  const [showPatterns, setShowPatterns] = useState(false);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => setShowPatterns(!!data.showPatterns))
+      .catch(() => {});
+  }, [status]);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -59,6 +68,7 @@ export default function Navbar() {
               <div className="flex items-center gap-1">
                 <Link href="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
                 <Link href="/problems" className={linkClass('/problems')}>Problems</Link>
+                {showPatterns && <Link href="/patterns" className={linkClass('/patterns')}>Patterns</Link>}
               </div>
 
               <Link href="/review" className={linkClass('/review', true)}>Review</Link>
@@ -101,6 +111,7 @@ export default function Navbar() {
             <>
               <Link href="/dashboard" onClick={toggleMenu} className={mobileLinkClass('/dashboard')}>Dashboard</Link>
               <Link href="/problems" onClick={toggleMenu} className={mobileLinkClass('/problems')}>Problems</Link>
+              {showPatterns && <Link href="/patterns" onClick={toggleMenu} className={mobileLinkClass('/patterns')}>Patterns</Link>}
               <Link href="/review" onClick={toggleMenu} className={`w-full text-left px-4 py-3 rounded-lg text-base font-bold transition-all bg-blue-100 text-blue-700 dark:bg-blue-600/20 dark:text-blue-400`}>Review</Link>
               <div className="w-full flex justify-start pl-1 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <SettingsDialog />
