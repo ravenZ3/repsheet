@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, fsrsTargetRetention: true },
+      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, fsrsTargetRetention: true, showPatterns: true },
     });
 
     if (!user) {
@@ -34,7 +34,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle, fsrsTargetRetention } = body;
+    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle, fsrsTargetRetention, showPatterns } = body;
 
     const updateData: Record<string, unknown> = {};
     if (typeof fsrsTargetRetention === 'number' && fsrsTargetRetention >= 0.70 && fsrsTargetRetention <= 0.99) {
@@ -42,6 +42,9 @@ export async function PATCH(request: NextRequest) {
     }
     if (typeof dailyReviewLimit === 'number' && dailyReviewLimit >= 1) {
         updateData.dailyReviewLimit = dailyReviewLimit;
+    }
+    if (typeof showPatterns === 'boolean') {
+        updateData.showPatterns = showPatterns;
     }
     if (leetcodeUsername !== undefined) {
         updateData.leetcodeUsername = leetcodeUsername;
@@ -62,7 +65,7 @@ export async function PATCH(request: NextRequest) {
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true }
+      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, showPatterns: true }
     });
 
     return NextResponse.json(updatedUser, { status: 200 });

@@ -47,6 +47,7 @@ model User {
   codeforcesHandle String?
   codeforcesLastSyncId Int?
   fsrsTargetRetention Float @default(0.90)
+  showPatterns     Boolean @default(false)
   accounts         Account[]
   sessions         Session[]
   problems         Problem[]
