@@ -24,27 +24,40 @@ enabled, a **Patterns** page appears in the navbar.
 - Light up the user's solved problems against the catalog: per-pattern coverage
   plus FSRS-derived review status (Due, Struggling).
 - Keep the core Dictionary experience unchanged for users who don't opt in.
-- Architect the catalog layer so a second source (automedon) can be added later
-  without a rewrite.
+- Architect the catalog layer so a second source (seanprashad) can be added
+  later without a rewrite.
 
 ## Non-Goals (deferred follow-ups)
 
 - Deep-linking an unsolved catalog problem into a prefilled `/add` flow.
 - Pattern-level "start a review session."
-- The automedon (820-problem) source. The architecture supports it; it is not
-  built in this iteration.
+- The seanprashad source (its value-add is company tags, not patterns). The
+  architecture supports it; it is not built in this iteration.
 - Multiple user-selectable catalog sources / a source dropdown.
 
 ## Catalog Source
 
-**seanprashad/leetcode-patterns** (~170 problems, structured data, includes
-difficulty and company tags). Chosen over automedon (820 problems, markdown
-only — needs a parser, no extra metadata) and NeetCode (curated but smaller) for
-data quality and lowest friction. All problems are free (no LeetCode Premium).
+**Automedon/ultimate-leetcode-patterns** — 41 patterns, 820 problems (20 each),
+all free (no LeetCode Premium). Source of truth is a single Markdown file
+(`Readme.md` on the `main` branch).
 
-Other sources surveyed for the record: automedon/ultimate-leetcode-patterns
-(41 patterns / 820 problems, markdown), NeetCode 150 (18 groups), Grokking
-"14 Patterns" (prose), MoiseevIgorPython/Leetcode-Patterns (markdown table).
+**Why automedon over seanprashad:** the spec's whole thesis is *techniques* over
+*topics*. Inspection of seanprashad's `questions.json` showed its `pattern` field
+is LeetCode's multi-tag set that mixes topics (Array, String, Hash Table, Tree —
+96/39/37/25 problems) with techniques, and each problem carries several tags. The
+topic tags duplicate RepSheet's existing `Problem.category` feature and bury the
+techniques. Automedon's 41 entries are *pure technique names* (Sliding Window,
+Two Pointers, Monotonic Stack, Prefix Sum, Topological Sort, Cyclic Sort, Two
+Heaps, K-way Merge, …), exactly one technique per section — a far better fit.
+
+The only cost is parsing markdown instead of JSON, and the format is rigidly
+regular (verified: a parser extracts all 41 patterns × 20 problems cleanly,
+including digit-bearing slugs like `4sum-ii`).
+
+Other sources surveyed for the record: seanprashad/leetcode-patterns (179
+problems, structured JSON, company tags — the planned second source), NeetCode
+150 (18 groups), Grokking "14 Patterns" (prose),
+MoiseevIgorPython/Leetcode-Patterns (markdown table).
 
 ## Architecture
 
@@ -56,12 +69,21 @@ boolean to gate the feature.
 
 ### 1. Catalog data pipeline
 
-- `scripts/build-pattern-catalog.ts` — fetches seanprashad's structured question
-  data and emits normalized JSON to `lib/patterns/catalogs/seanprashad.json`:
+- `scripts/build-pattern-catalog.ts` — fetches automedon's Markdown
+  (`https://raw.githubusercontent.com/Automedon/ultimate-leetcode-patterns/main/Readme.md`),
+  parses it, and emits normalized JSON to `lib/patterns/catalogs/automedon.json`.
+  Parse rules (verified against the live file):
+  - Pattern heading: `^##\s+(\d+)\.\s+(.+?)\s*$` → ordinal + name.
+  - Problem line: `^\d+\.\s+\[(.+?)\]\((https://leetcode\.com/problems/([^/)]+)/?)\)\s+\((Easy|Medium|Hard)\)\s*$`
+    → name + url + slug + difficulty.
+  - The `## Patterns` table-of-contents heading has no ordinal in this regex's
+    capture form and its entries are links (`[1. ...](#...)`), so they are
+    naturally skipped.
+  - Pattern `id` = slugified name (lowercase, non-alphanumeric runs → `-`).
 
   ```jsonc
   {
-    "source": "seanprashad",
+    "source": "automedon",
     "generatedAt": "2026-06-28T00:00:00.000Z",
     "patterns": [
       {
@@ -83,8 +105,8 @@ boolean to gate the feature.
 - `lib/patterns/types.ts` — defines the `CatalogSource`, `CatalogPattern`, and
   `CatalogProblem` types.
 - `lib/patterns/index.ts` — a small registry exposing the available catalog(s).
-  **This is the extension point for automedon:** add `automedon.json` + register
-  it; everything downstream is source-agnostic.
+  **This is the extension point for seanprashad:** add `seanprashad.json` +
+  register it; everything downstream is source-agnostic.
 - The catalog is regenerated only when the script is re-run. Committed JSON =
   reproducible builds, zero runtime fetch.
 
