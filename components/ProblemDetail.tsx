@@ -193,6 +193,7 @@ export default function ProblemDetail({ problem, onUpdate, onClose }: ProblemDet
             isStuck: problem.isStuck,
             category: problem.category.join(", "),
         })
+        setSplitPct(getAdaptiveSplit(problem.notes || "", problem.mistakesMade || ""))
         setLastSaved(null)
         setError(null)
         setNotesMode("view")

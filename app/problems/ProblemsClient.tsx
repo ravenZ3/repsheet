@@ -195,7 +195,6 @@ export default function ProblemsClient({
                     ) : selectedProblem ? (
                         <div className="lg:h-full lg:min-h-0">
                             <ProblemDetail
-                                key={selectedProblem.id}
                                 problem={selectedProblem}
                                 onUpdate={handleProblemUpdate}
                                 onClose={handleClose}
