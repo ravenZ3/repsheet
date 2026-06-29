@@ -4,8 +4,6 @@
 const RS = globalThis.browser || globalThis.chrome;
 const BASE_URL = "https://repsheet.vercel.app";
 
-const RATING_LABELS = { 1: "Again", 2: "Hard", 3: "Good", 4: "Easy" };
-
 function show(id) {
   for (const el of document.querySelectorAll("#loading, #signedout, #content")) {
     el.classList.add("hidden");
@@ -19,27 +17,23 @@ function focusHref(focus) {
     : `${BASE_URL}/review?topic=${encodeURIComponent(focus.value)}`;
 }
 
-function renderRecent(recent) {
-  const ul = document.getElementById("recent");
-  ul.innerHTML = "";
-  if (!recent || recent.length === 0) {
-    const li = document.createElement("li");
-    li.className = "empty";
-    li.textContent = "No reviews yet.";
-    ul.appendChild(li);
+function renderFocusChips(chips) {
+  const wrap = document.getElementById("focusChips");
+  wrap.innerHTML = "";
+  if (!chips || chips.length === 0) {
+    const hint = document.createElement("p");
+    hint.className = "muted chips-empty";
+    hint.textContent = "Pin patterns or skills in Settings to drill them here.";
+    wrap.appendChild(hint);
     return;
   }
-  for (const r of recent) {
-    const li = document.createElement("li");
-    const nm = document.createElement("span");
-    nm.className = "nm";
-    nm.textContent = r.name;
-    const rt = document.createElement("span");
-    rt.className = "rt";
-    rt.textContent = RATING_LABELS[r.rating] || "";
-    li.appendChild(nm);
-    li.appendChild(rt);
-    ul.appendChild(li);
+  for (const c of chips) {
+    const btn = document.createElement("button");
+    btn.className = `chip ${c.kind}`;
+    btn.textContent = c.label;
+    btn.title = `Open ${c.label}`;
+    btn.addEventListener("click", () => RS.tabs.create({ url: focusHref(c) }));
+    wrap.appendChild(btn);
   }
 }
 
@@ -74,7 +68,7 @@ async function load() {
   document.getElementById("due").textContent = summary.dueToday ?? 0;
   document.getElementById("reviewed").textContent = summary.reviewedToday ?? 0;
   document.getElementById("backlog").textContent = summary.backlog ?? 0;
-  renderRecent(summary.recent);
+  renderFocusChips(summary.focusChips);
   applyFocus(summary.activeFocus);
   show("content");
 }

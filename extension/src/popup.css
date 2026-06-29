@@ -48,11 +48,15 @@ body {
 .orange { color: #f97316; }
 
 .recent-title { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #777; margin-bottom: 6px; }
-.recent { list-style: none; margin: 0 0 14px; padding: 0; }
-.recent li { font-size: 12px; color: #ccc; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.05); display: flex; justify-content: space-between; gap: 8px; }
-.recent li .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.recent li .rt { color: #888; flex-shrink: 0; }
-.recent .empty { color: #666; border: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.chip {
+  cursor: pointer; border-radius: 20px; padding: 4px 10px; font-size: 12px;
+  font-weight: 500; border: 1px solid; background: transparent;
+}
+.chip.pattern { border-color: rgba(168,85,247,.3); background: rgba(168,85,247,.1); color: #d8b4fe; }
+.chip.skill { border-color: rgba(59,130,246,.3); background: rgba(59,130,246,.1); color: #93c5fd; }
+.chip:hover { filter: brightness(1.2); }
+.chips-empty { margin: 0; font-size: 11px; }
 
 .primary {
   width: 100%;

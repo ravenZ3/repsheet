@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserIdFromRequest } from "@/lib/extensionAuth";
 import { corsJson, preflight } from "@/lib/extensionCors";
-import { parseFocusTag } from "@/lib/focusTags";
+import { parseFocusTag, parseFocusTags } from "@/lib/focusTags";
 import { getCatalog } from "@/lib/patterns";
 import { buildPatternView, splitPatternProblems, type MatchableProblem } from "@/lib/patterns/match";
 
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { dailyReviewLimit: true, activeFocus: true },
+      select: { dailyReviewLimit: true, activeFocus: true, focusTags: true },
     });
     const limit = user?.dailyReviewLimit ?? 20;
 
@@ -80,18 +80,12 @@ export async function GET(req: NextRequest) {
     const cappedDue = Math.min(totalDue, limit);
     const dueToday = Math.max(0, cappedDue - reviewedToday);
 
-    const recentReviews = await prisma.review.findMany({
-      where: { userId },
-      orderBy: { date: "desc" },
-      take: 5,
-      select: { rating: true, date: true, problem: { select: { name: true, platform: true } } },
-    });
-
-    const recent = recentReviews.map((r) => ({
-      name: r.problem?.name ?? "Unknown",
-      platform: r.problem?.platform ?? null,
-      rating: r.rating,
-      date: r.date,
+    // Pinned focus chips for one-tap launch in the popup.
+    const patternNames = new Map(getCatalog().patterns.map((p) => [p.id, p.name]));
+    const focusChips = parseFocusTags(user?.focusTags ?? []).map((t) => ({
+      kind: t.kind,
+      value: t.value,
+      label: t.kind === "pattern" ? patternNames.get(t.value) ?? t.value : t.value,
     }));
 
     const activeFocus = await computeActiveFocus(userId, user?.activeFocus, now);
@@ -101,7 +95,7 @@ export async function GET(req: NextRequest) {
       dueToday,
       reviewedToday,
       backlog: Math.max(0, totalDue - cappedDue),
-      recent,
+      focusChips,
       activeFocus,
     });
   } catch (error) {
