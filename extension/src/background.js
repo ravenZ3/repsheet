@@ -16,14 +16,27 @@ const CONFIG = {
 // Reads the NextAuth session JWT from the Repsheet cookie jar. Returns the raw
 // token string, or null if the user isn't logged in on the website.
 async function getSessionToken() {
+  // DIAGNOSTIC: list every cookie the extension can see for the Repsheet domain.
+  try {
+    const all = await RS.cookies.getAll({ url: CONFIG.BASE_URL });
+    console.log("[Repsheet] cookies visible for", CONFIG.BASE_URL, ":",
+      all.map((c) => c.name));
+  } catch (e) {
+    console.error("[Repsheet] cookies.getAll failed:", e);
+  }
+
   for (const name of CONFIG.SESSION_COOKIE_NAMES) {
     try {
       const cookie = await RS.cookies.get({ url: CONFIG.BASE_URL, name });
-      if (cookie && cookie.value) return cookie.value;
+      if (cookie && cookie.value) {
+        console.log("[Repsheet] found session cookie:", name);
+        return cookie.value;
+      }
     } catch (e) {
-      // ignore and try the next name
+      console.error("[Repsheet] cookies.get failed for", name, e);
     }
   }
+  console.warn("[Repsheet] no session cookie matched", CONFIG.SESSION_COOKIE_NAMES);
   return null;
 }
 
@@ -46,6 +59,7 @@ async function apiFetch(path, options = {}) {
   } catch (e) {
     body = null;
   }
+  console.log("[Repsheet] API", path, "→", res.status, body);
   return { ok: res.ok, status: res.status, body };
 }
 
