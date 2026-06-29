@@ -65,13 +65,57 @@ async function apiFetch(path, options = {}) {
 
 // --- Actions ------------------------------------------------------------
 
+// Fast client-side dedupe: a problem captured within this window is treated as
+// already logged and never re-sent. This is only a convenience/perf layer — the
+// server is the authority that actually protects FSRS from double-advancing.
+const CAPTURE_COOLDOWN_MS = 5 * 60 * 1000;
+const RECENT_CAPTURES_KEY = "rs_recentCaptures";
+
+async function readRecentCaptures() {
+  try {
+    const stored = await RS.storage.local.get(RECENT_CAPTURES_KEY);
+    return (stored && stored[RECENT_CAPTURES_KEY]) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+async function wasRecentlyCaptured(link) {
+  if (!link) return false;
+  const map = await readRecentCaptures();
+  const ts = map[link];
+  return typeof ts === "number" && Date.now() - ts < CAPTURE_COOLDOWN_MS;
+}
+
+async function markCaptured(link) {
+  if (!link) return;
+  const map = await readRecentCaptures();
+  const now = Date.now();
+  map[link] = now;
+  // Prune stale entries so the map can't grow unbounded.
+  for (const k of Object.keys(map)) {
+    if (now - map[k] > CAPTURE_COOLDOWN_MS) delete map[k];
+  }
+  try {
+    await RS.storage.local.set({ [RECENT_CAPTURES_KEY]: map });
+  } catch (e) {
+    /* best-effort */
+  }
+}
+
 async function capture(payload) {
+  const link = payload && payload.link;
+  // Drop rapid duplicates before they ever reach the server.
+  if (await wasRecentlyCaptured(link)) {
+    return { success: true, deduped: true, message: "Already logged" };
+  }
   const { ok, status, body } = await apiFetch("/api/extension/capture", {
     method: "POST",
     body: JSON.stringify(payload),
   });
   if (status === 401) return { error: "Unauthorized" };
   if (ok) {
+    await markCaptured(link);
     refreshBadge();
     return body;
   }
@@ -112,6 +156,9 @@ RS.runtime.onMessage.addListener((message, sender, sendResponse) => {
     switch (message && message.type) {
       case "capture":
         sendResponse(await capture(message.payload));
+        break;
+      case "captureStatus":
+        sendResponse({ recentlyCaptured: await wasRecentlyCaptured(message.link) });
         break;
       case "summary":
         sendResponse(await getSummary());

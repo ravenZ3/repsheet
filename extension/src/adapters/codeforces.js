@@ -50,7 +50,8 @@
   globalThis.RS_ADAPTERS = globalThis.RS_ADAPTERS || [];
   globalThis.RS_ADAPTERS.push({
     name: "Codeforces",
-    matches: (url) => /(^|\.)codeforces\.com\//.test(url),
+    // Anchor on /, . or start so bare and www codeforces.com both match.
+    matches: (url) => /(^|\/|\.)codeforces\.com\//.test(url),
 
     scrapeProblem() {
       const { rating, tags } = hasStatement() ? scrapeRatingAndTags() : { rating: null, tags: [] };
@@ -65,16 +66,17 @@
       };
     },
 
+    // Fire on the transition into an accepted verdict, re-arming only once it
+    // clears, so a lingering verdict element doesn't refire for the same solve.
     watchVerdict(onAccepted) {
-      let lastFired = 0;
+      let handled = false;
       const check = () => {
-        const el = document.querySelector(SELECTORS.accepted);
-        if (el) {
-          const now = Date.now();
-          if (now - lastFired > 4000) {
-            lastFired = now;
-            onAccepted();
-          }
+        const accepted = !!document.querySelector(SELECTORS.accepted);
+        if (accepted && !handled) {
+          handled = true;
+          onAccepted();
+        } else if (!accepted) {
+          handled = false;
         }
       };
       const observer = new MutationObserver(check);

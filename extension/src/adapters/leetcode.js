@@ -51,7 +51,9 @@
   globalThis.RS_ADAPTERS = globalThis.RS_ADAPTERS || [];
   globalThis.RS_ADAPTERS.push({
     name: "LeetCode",
-    matches: (url) => /(^|\.)leetcode\.com\/problems\//.test(url),
+    // Anchor on /, . or start so bare leetcode.com and www.leetcode.com both
+    // match, but lookalikes like notleetcode.com do not.
+    matches: (url) => /(^|\/|\.)leetcode\.com\/problems\//.test(url),
 
     scrapeProblem() {
       return {
@@ -63,17 +65,20 @@
       };
     },
 
-    // Calls onAccepted() once each time an "Accepted" verdict appears.
+    // Calls onAccepted() once each time an "Accepted" verdict appears. The
+    // verdict element lingers in the DOM and the page mutates constantly, so we
+    // fire on the transition into "accepted" and only re-arm once it clears —
+    // otherwise the same solve would fire repeatedly.
     watchVerdict(onAccepted) {
-      let lastFired = 0;
+      let handled = false;
       const check = () => {
         const el = document.querySelector(SELECTORS.verdict);
-        if (el && /accepted/i.test(el.textContent || "")) {
-          const now = Date.now();
-          if (now - lastFired > 4000) {
-            lastFired = now;
-            onAccepted();
-          }
+        const accepted = !!(el && /accepted/i.test(el.textContent || ""));
+        if (accepted && !handled) {
+          handled = true;
+          onAccepted();
+        } else if (!accepted) {
+          handled = false;
         }
       };
       const observer = new MutationObserver(check);
