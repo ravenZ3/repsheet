@@ -44,6 +44,18 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     limit = user?.dailyReviewLimit || 20;
     focusChips = resolveFocusChips(user?.focusTags ?? []);
 
+    // Persist the active focus so the extension can mirror the review page's
+    // current state. Pattern/skill focus sets it; global/relearning clears it.
+    const activeFocus = patternFilter
+      ? `pattern:${patternFilter}`
+      : topicFilter
+      ? `skill:${topicFilter}`
+      : null;
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { activeFocus },
+    });
+
     reviewedToday = await prisma.problem.count({
       where: {
         userId: session.user.id,

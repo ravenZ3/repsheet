@@ -49,6 +49,7 @@ model User {
   fsrsTargetRetention Float @default(0.90)
   showPatterns     Boolean @default(false)
   focusTags        String[] @default([])
+  activeFocus      String?
   accounts         Account[]
   sessions         Session[]
   problems         Problem[]

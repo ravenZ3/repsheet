@@ -9,7 +9,28 @@ body {
 }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .brand { font-weight: 700; font-size: 15px; }
+.header-actions { display: flex; align-items: center; gap: 4px; }
 .link { background: none; border: none; color: #a855f7; cursor: pointer; font-size: 12px; }
+.iconbtn {
+  background: none; border: none; color: #888; cursor: pointer;
+  font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: 6px;
+}
+.iconbtn:hover { color: #fff; background: rgba(255,255,255,.06); }
+.iconbtn.spin { animation: spin .6s linear; }
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+.focus-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 10px; padding: 7px 10px; border-radius: 10px;
+  background: rgba(168,85,247,.12); border: 1px solid rgba(168,85,247,.3);
+}
+.focus-label { font-size: 12px; color: #d8b4fe; }
+.focus-label b { color: #fff; font-weight: 600; }
+.focus-open {
+  background: #a855f7; color: #fff; border: none; border-radius: 6px;
+  font-size: 11px; font-weight: 600; padding: 4px 8px; cursor: pointer;
+}
+.focus-open:hover { opacity: .9; }
 .muted { color: #888; font-size: 13px; }
 .hidden { display: none; }
 
