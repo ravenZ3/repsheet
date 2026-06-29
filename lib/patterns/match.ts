@@ -91,3 +91,26 @@ export function buildPatternView(
     return { id: pat.id, name: pat.name, total: pat.problems.length, solved, due, struggling, problems: views }
   })
 }
+
+export interface PatternBuckets {
+  due: CatalogProblemView[]
+  inProgress: CatalogProblemView[]
+  notSolved: CatalogProblemView[]
+}
+
+/**
+ * Splits a pattern's problems into the three buckets the focused practice view
+ * renders: solved-and-due (review now), solved-but-not-due (in progress), and
+ * not-yet-solved (suggestions).
+ */
+export function splitPatternProblems(pattern: PatternView): PatternBuckets {
+  const due: CatalogProblemView[] = []
+  const inProgress: CatalogProblemView[] = []
+  const notSolved: CatalogProblemView[] = []
+  for (const p of pattern.problems) {
+    if (p.status === "not-solved") notSolved.push(p)
+    else if (p.due) due.push(p)
+    else inProgress.push(p)
+  }
+  return { due, inProgress, notSolved }
+}
