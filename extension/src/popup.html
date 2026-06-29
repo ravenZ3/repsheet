@@ -7,7 +7,10 @@
   <body>
     <div class="header">
       <span class="brand">RepSheet</span>
-      <button id="open" class="link">Open ↗</button>
+      <div class="header-actions">
+        <button id="refresh" class="iconbtn" title="Refresh">&#x21bb;</button>
+        <button id="open" class="link">Open &#x2197;</button>
+      </div>
     </div>
 
     <div id="loading" class="muted">Loading…</div>
@@ -18,9 +21,14 @@
     </div>
 
     <div id="content" class="hidden">
+      <div id="focusBanner" class="focus-banner hidden">
+        <span class="focus-label">Focused on <b id="focusName"></b></span>
+        <button id="openFocus" class="focus-open">Open</button>
+      </div>
+
       <div class="stats">
         <div class="stat">
-          <span class="stat-label">Due today</span>
+          <span class="stat-label" id="dueLabel">Due today</span>
           <span class="stat-num" id="due">0</span>
         </div>
         <div class="stat">

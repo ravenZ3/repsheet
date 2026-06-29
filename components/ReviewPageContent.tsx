@@ -6,8 +6,15 @@ import { useRouter } from "next/navigation"
 import type { Problem } from "@prisma/client"
 import ProblemReviewCard from "./ProblemReviewCard"
 import ProblemDetailPanel from "./ProblemDetailPanel"
+import SuggestionCard from "./SuggestionCard"
 import { AnimatePresence, motion } from "framer-motion"
 import { useCallback } from "react"
+
+export interface PracticeSuggestion {
+	name: string
+	url: string
+	difficulty: string
+}
 
 interface ReviewPageContentProps {
 	problems: Problem[]
@@ -15,6 +22,8 @@ interface ReviewPageContentProps {
     backlog: number
 	error: string | null
     topicFocus?: string
+    focusTitle?: string
+    suggestions?: PracticeSuggestion[]
 }
 
 export default function ReviewPageContent({
@@ -23,6 +32,8 @@ export default function ReviewPageContent({
     backlog,
 	error,
     topicFocus,
+    focusTitle,
+    suggestions,
 }: ReviewPageContentProps) {
 	// 2. Instantiate the router
 	const router = useRouter()
@@ -74,9 +85,23 @@ export default function ReviewPageContent({
 			{/* Raycast-style glowing ambient red orb behind the interface */}
 			<div className="hidden md:block fixed top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/[0.05] dark:bg-red-500/[0.07] blur-[100px] rounded-full pointer-events-none -z-10" style={{ willChange: "transform", transform: "translateZ(0)" }} />
 
+			{(focusTitle || topicFocus) && (
+				<div className="flex items-center justify-center gap-3 mb-4">
+					<span className="text-[13px] text-gray-500 dark:text-[#888]">
+						Focused on <span className="font-semibold text-gray-900 dark:text-white">{focusTitle ?? topicFocus}</span>
+					</span>
+					<button
+						onClick={() => router.push("/review")}
+						className="text-[12px] font-medium px-2.5 py-1 rounded-[6px] border border-gray-200 dark:border-white/[0.1] text-gray-600 dark:text-[#aaa] hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+					>
+						Clear focus
+					</button>
+				</div>
+			)}
+
 			<div className="grid grid-cols-3 gap-3 mb-3 max-w-sm mx-auto">
 				{[
-					{ value: problems.length, label: topicFocus ? "In queue" : "Due today", color: "text-gray-900 dark:text-gray-100" },
+					{ value: problems.length, label: (topicFocus || focusTitle) ? "In queue" : "Due today", color: "text-gray-900 dark:text-gray-100" },
 					{ value: reviewedCount, label: "Reviewed", color: "text-green-600 dark:text-green-400" },
 					{ value: `+${backlog}`, label: "Backlog", color: backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100" },
 				].map(({ value, label, color }) => (
@@ -181,6 +206,19 @@ export default function ReviewPageContent({
 					)}
 				</AnimatePresence>
 			</div>
+
+			{suggestions && suggestions.length > 0 && (
+				<div className="mt-8">
+					<h3 className="text-[13px] font-semibold uppercase tracking-wide text-gray-400 dark:text-[#666] mb-3">
+						Not yet solved · {suggestions.length}
+					</h3>
+					<ul className="space-y-4">
+						{suggestions.map((s) => (
+							<SuggestionCard key={s.url} name={s.name} url={s.url} difficulty={s.difficulty} />
+						))}
+					</ul>
+				</div>
+			)}
 		</div>
 	)
 }

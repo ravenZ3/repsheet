@@ -12,12 +12,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import FocusTagInput, { type PatternOption } from '@/components/FocusTagInput';
 
 export default function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const [limit, setLimit] = useState(20);
   const [targetRetention, setTargetRetention] = useState(0.90);
   const [showPatterns, setShowPatterns] = useState(false);
+  const [focusTags, setFocusTags] = useState<string[]>([]);
+  const [focusPatterns, setFocusPatterns] = useState<PatternOption[]>([]);
+  const [focusSkills, setFocusSkills] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [leetcodeUsername, setLeetcodeUsername] = useState("");
@@ -38,6 +42,7 @@ export default function SettingsDialog() {
           if (data.dailyReviewLimit) setLimit(data.dailyReviewLimit);
           if (data.fsrsTargetRetention) setTargetRetention(data.fsrsTargetRetention);
           if (typeof data.showPatterns === 'boolean') setShowPatterns(data.showPatterns);
+          if (Array.isArray(data.focusTags)) setFocusTags(data.focusTags);
           if (data.leetcodeUsername) {
             setLeetcodeUsername(data.leetcodeUsername);
             setOriginalUsername(data.leetcodeUsername);
@@ -51,6 +56,14 @@ export default function SettingsDialog() {
         })
         .catch(() => toast.error('Failed to load settings'))
         .finally(() => setLoading(false));
+
+      fetch('/api/skills')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data.patterns)) setFocusPatterns(data.patterns);
+          if (Array.isArray(data.skills)) setFocusSkills(data.skills);
+        })
+        .catch(() => {/* autocomplete is non-critical; ignore */});
     }
   }, [open]);
 
@@ -60,7 +73,7 @@ export default function SettingsDialog() {
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dailyReviewLimit: Number(limit), leetcodeUsername: leetcodeUsername.trim(), fsrsTargetRetention: targetRetention, showPatterns }),
+        body: JSON.stringify({ dailyReviewLimit: Number(limit), leetcodeUsername: leetcodeUsername.trim(), fsrsTargetRetention: targetRetention, showPatterns, focusTags }),
       });
       if (!res.ok) throw new Error('Failed to save settings');
       toast.success('Settings saved successfully');
@@ -311,6 +324,24 @@ export default function SettingsDialog() {
                 >
                     <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${showPatterns ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
+            </div>
+
+            <div className="w-full h-[1px] bg-gray-100 dark:bg-white/[0.06] my-4" />
+            <div className="w-full px-6 flex flex-col items-center">
+                <div className="text-center mb-3">
+                    <label className="text-[13px] font-semibold text-gray-700 dark:text-[#888] tracking-wide block">
+                      Focused Practice
+                    </label>
+                    <p className="text-[12px] text-gray-500 dark:text-[#555] mt-1 max-w-[280px] mx-auto">
+                      Pin patterns and skills to drill. They appear as one-tap chips on your dashboard and review page.
+                    </p>
+                </div>
+                <FocusTagInput
+                  value={focusTags}
+                  patterns={focusPatterns}
+                  skills={focusSkills}
+                  onChange={setFocusTags}
+                />
             </div>
 
         </div>

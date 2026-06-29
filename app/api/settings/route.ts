@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
+import { parseFocusTags, formatFocusTag } from "@/lib/focusTags";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -12,7 +13,7 @@ export async function GET() {
   try {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, fsrsTargetRetention: true, showPatterns: true },
+      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, fsrsTargetRetention: true, showPatterns: true, focusTags: true },
     });
 
     if (!user) {
@@ -34,9 +35,15 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle, fsrsTargetRetention, showPatterns } = body;
+    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle, fsrsTargetRetention, showPatterns, focusTags } = body;
 
     const updateData: Record<string, unknown> = {};
+    if (Array.isArray(focusTags)) {
+        // Keep only well-formed, de-duplicated kind:value entries.
+        updateData.focusTags = parseFocusTags(
+          focusTags.filter((t): t is string => typeof t === "string")
+        ).map(formatFocusTag);
+    }
     if (typeof fsrsTargetRetention === 'number' && fsrsTargetRetention >= 0.70 && fsrsTargetRetention <= 0.99) {
         updateData.fsrsTargetRetention = fsrsTargetRetention;
     }
@@ -65,7 +72,7 @@ export async function PATCH(request: NextRequest) {
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, showPatterns: true }
+      select: { dailyReviewLimit: true, leetcodeUsername: true, codeforcesHandle: true, showPatterns: true, focusTags: true }
     });
 
     return NextResponse.json(updatedUser, { status: 200 });

@@ -88,9 +88,11 @@ async function refreshBadge() {
   try {
     const summary = await getSummary();
     if (summary && summary.success) {
-      const n = summary.dueToday || 0;
+      // Mirror the website's focus: badge shows the active focus count when
+      // focused, otherwise the global due-today count.
+      const n = summary.activeFocus ? (summary.activeFocus.count || 0) : (summary.dueToday || 0);
       await RS.action.setBadgeText({ text: n > 0 ? String(n) : "" });
-      await RS.action.setBadgeBackgroundColor({ color: "#a855f7" });
+      await RS.action.setBadgeBackgroundColor({ color: summary.activeFocus ? "#7c3aed" : "#a855f7" });
     } else {
       await RS.action.setBadgeText({ text: "" });
     }

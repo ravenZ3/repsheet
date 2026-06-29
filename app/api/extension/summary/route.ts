@@ -2,6 +2,44 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserIdFromRequest } from "@/lib/extensionAuth";
 import { corsJson, preflight } from "@/lib/extensionCors";
+import { parseFocusTag } from "@/lib/focusTags";
+import { getCatalog } from "@/lib/patterns";
+import { buildPatternView, splitPatternProblems, type MatchableProblem } from "@/lib/patterns/match";
+
+interface ActiveFocusSummary {
+  kind: "pattern" | "skill";
+  value: string;
+  label: string;
+  count: number;
+}
+
+/** Computes the active-focus label + in-queue count, mirroring the review page. */
+async function computeActiveFocus(
+  userId: string,
+  activeFocus: string | null | undefined,
+  now: Date
+): Promise<ActiveFocusSummary | null> {
+  const tag = activeFocus ? parseFocusTag(activeFocus) : null;
+  if (!tag) return null;
+
+  if (tag.kind === "skill") {
+    const count = await prisma.problem.count({
+      where: { userId, category: { has: tag.value } },
+    });
+    return { kind: "skill", value: tag.value, label: tag.value, count };
+  }
+
+  // pattern: match the user's problems to the catalog pattern (due + in-progress)
+  const problems = await prisma.problem.findMany({
+    where: { userId },
+    select: { id: true, name: true, link: true, platform: true, nextReviewDate: true, lastRating: true },
+  });
+  const matchable: MatchableProblem[] = problems;
+  const view = buildPatternView(getCatalog(), matchable, now).find((v) => v.id === tag.value);
+  if (!view) return null;
+  const { due, inProgress } = splitPatternProblems(view);
+  return { kind: "pattern", value: tag.value, label: view.name, count: due.length + inProgress.length };
+}
 
 export async function OPTIONS(req: NextRequest) {
   return preflight(req);
@@ -20,7 +58,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { dailyReviewLimit: true },
+      select: { dailyReviewLimit: true, activeFocus: true },
     });
     const limit = user?.dailyReviewLimit ?? 20;
 
@@ -56,12 +94,15 @@ export async function GET(req: NextRequest) {
       date: r.date,
     }));
 
+    const activeFocus = await computeActiveFocus(userId, user?.activeFocus, now);
+
     return corsJson(req, {
       success: true,
       dueToday,
       reviewedToday,
       backlog: Math.max(0, totalDue - cappedDue),
       recent,
+      activeFocus,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Summary failed";

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { extractLeetcodeSlug, normalizeName, buildProblemIndex, buildPatternView } from "./match"
+import { extractLeetcodeSlug, normalizeName, buildProblemIndex, buildPatternView, splitPatternProblems } from "./match"
 import type { MatchableProblem } from "./match"
 import type { Catalog } from "./types"
 
@@ -120,5 +120,22 @@ describe("buildPatternView", () => {
       { id: "p1", name: "Two Sum", link: "https://leetcode.com/problems/two-sum/", platform: "leetcode", nextReviewDate: PAST, lastRating: 1 },
     ], NOW)
     expect(view[0]).toMatchObject({ total: 3, solved: 1, due: 1, struggling: 1 })
+  })
+})
+
+describe("splitPatternProblems", () => {
+  it("buckets problems into due, in-progress, and not-solved", () => {
+    const FUTURE = new Date(NOW.getTime() + 86400000)
+    const view = buildPatternView(catalog, [
+      // solved + due (past review date)
+      { id: "p1", name: "Two Sum", link: "https://leetcode.com/problems/two-sum/", platform: "leetcode", nextReviewDate: PAST, lastRating: 3 },
+      // solved + not due (future review date) -> in progress
+      { id: "p2", name: "Group Anagrams", link: "https://leetcode.com/problems/group-anagrams/", platform: "leetcode", nextReviewDate: FUTURE, lastRating: 3 },
+    ], NOW)
+    const buckets = splitPatternProblems(view[0])
+    expect(buckets.due.map((p) => p.slug)).toContain("two-sum")
+    expect(buckets.inProgress.map((p) => p.slug)).toContain("group-anagrams")
+    expect(buckets.notSolved.map((p) => p.slug)).toContain("first-missing-positive")
+    expect(buckets.due.length + buckets.inProgress.length + buckets.notSolved.length).toBe(view[0].total)
   })
 })

@@ -6,6 +6,8 @@ import { authOptions } from "@/lib/authOptions"
 import { redirect } from "next/navigation"
 import DashboardCharts from "@/components/DashboardCharts"
 import OnboardingPanel from "@/components/OnboardingPanel"
+import FocusChips from "@/components/FocusChips"
+import { resolveFocusChips } from "@/lib/focusChips"
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ platform?: string }> }) {
 	const session = await getServerSession(authOptions)
@@ -23,9 +25,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
 	const user = await prisma.user.findUnique({
 		where: { id: session.user.id },
-		select: { dailyReviewLimit: true },
+		select: { dailyReviewLimit: true, focusTags: true },
 	})
 	const limit = user?.dailyReviewLimit || 20;
+	const focusChips = resolveFocusChips(user?.focusTags ?? []);
 
     const baseWhere: Prisma.ProblemWhereInput = { userId: session.user.id };
     if (platformFilter && platformFilter !== 'All') {
@@ -177,6 +180,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 					Spaced repetition for competitive programming
 				</p>
 			</div>
+			{focusChips.length > 0 && (
+				<div className="px-2">
+					<FocusChips chips={focusChips} />
+				</div>
+			)}
 			<DashboardCharts data={data} progress={progress} />
 		</div>
 	)
