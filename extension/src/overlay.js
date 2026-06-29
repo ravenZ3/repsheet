@@ -80,7 +80,7 @@
         try {
           const result = await onRate(r.value);
           if (result && result.success) {
-            status.textContent = "✓ Scheduled";
+            status.textContent = result.deduped ? "✓ Already logged" : "✓ Scheduled";
             setTimeout(remove, 1500);
           } else {
             throw new Error((result && result.message) || "Failed");
@@ -100,5 +100,34 @@
     document.body.appendChild(hostEl);
   }
 
-  globalThis.RS_Overlay = { show, remove };
+  // Passive card shown when the problem was already captured recently — no
+  // rating prompt, so the same solve can't be double-rated.
+  function showLogged(problem) {
+    remove();
+    hostEl = document.createElement("div");
+    const shadow = hostEl.attachShadow({ mode: "open" });
+
+    const style = document.createElement("style");
+    style.textContent = STYLE;
+    shadow.appendChild(style);
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="head">
+        <span class="brand">Repsheet · Logged</span>
+        <button class="close" title="Dismiss">✕</button>
+      </div>
+      <div class="name"></div>
+      <div class="status">✓ Already logged — no need to rate again</div>
+    `;
+    card.querySelector(".name").textContent = problem.name;
+    card.querySelector(".close").addEventListener("click", remove);
+
+    shadow.appendChild(card);
+    document.body.appendChild(hostEl);
+    setTimeout(remove, 2500);
+  }
+
+  globalThis.RS_Overlay = { show, showLogged, remove };
 })();

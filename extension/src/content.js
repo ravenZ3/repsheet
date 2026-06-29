@@ -8,7 +8,7 @@
   const adapter = adapters.find((a) => a.matches(url));
   if (!adapter) return;
 
-  function handleAccepted() {
+  async function handleAccepted() {
     let problem;
     try {
       problem = adapter.scrapeProblem();
@@ -17,6 +17,22 @@
       return;
     }
     if (!problem || !problem.name || !problem.link) return;
+
+    // Async pre-check: if this problem was just captured, don't prompt for a
+    // rating again — show a passive "already logged" card instead. Keeps the
+    // user from re-rating the same solve (the server also guards this).
+    try {
+      const status = await globalThis.RS.runtime.sendMessage({
+        type: "captureStatus",
+        link: problem.link,
+      });
+      if (status && status.recentlyCaptured) {
+        globalThis.RS_Overlay.showLogged(problem);
+        return;
+      }
+    } catch (e) {
+      // If the check fails, fall through to the normal prompt.
+    }
 
     globalThis.RS_Overlay.show(problem, async (rating) => {
       const response = await globalThis.RS.runtime.sendMessage({

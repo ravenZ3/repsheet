@@ -50,57 +50,73 @@ export async function POST(req: NextRequest) {
 
   try {
     const now = new Date();
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { fsrsTargetRetention: true },
-    });
 
-    // Dedupe by URL scoped to the user — same key the sync uses.
-    let problem = await prisma.problem.findFirst({
-      where: { userId, link: data.link },
-    });
-
-    if (!problem) {
-      problem = await prisma.problem.create({
-        data: {
-          userId,
-          name: data.name,
-          platform: data.platform,
-          link: data.link,
-          difficulty: normalizeDifficulty(data.difficulty),
-          category: data.tags,
-          platformRating: data.platformRating ?? null,
-          dateSolved: now,
-          nextReviewDate: now,
-          reviewCount: 0,
-        },
+    // Idempotent capture. A duplicate of the same solve (repeated overlay fires,
+    // double-clicks, multi-device, a retried request) always arrives after the
+    // first one has already pushed nextReviewDate into the future. So we only
+    // advance FSRS for a genuinely due — or brand-new — review; anything else is
+    // a no-op. Done inside a transaction with an optimistic guard on lastReview
+    // so two concurrent clicks can't both schedule. This is what protects FSRS
+    // from duplicate captures; the client-side cooldown is only a fast-path.
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { fsrsTargetRetention: true },
       });
-    }
 
-    const fsrsUpdate = scheduleReview(
-      problem,
-      data.rating,
-      user?.fsrsTargetRetention ?? undefined,
-      now
-    );
+      // Dedupe the problem by URL scoped to the user — same key the sync uses.
+      let problem = await tx.problem.findFirst({
+        where: { userId, link: data.link },
+      });
+      const isNew = !problem;
 
-    await prisma.problem.update({
-      where: { id: problem.id },
-      data: {
-        ...fsrsUpdate,
-        reviewCount: { increment: 1 },
-      },
+      if (!problem) {
+        problem = await tx.problem.create({
+          data: {
+            userId,
+            name: data.name,
+            platform: data.platform,
+            link: data.link,
+            difficulty: normalizeDifficulty(data.difficulty),
+            category: data.tags,
+            platformRating: data.platformRating ?? null,
+            dateSolved: now,
+            nextReviewDate: now,
+            reviewCount: 0,
+          },
+        });
+      }
+
+      const isDue = isNew || !problem.nextReviewDate || problem.nextReviewDate <= now;
+      if (!isDue) {
+        return { deduped: true, problemId: problem.id, nextReviewDate: problem.nextReviewDate };
+      }
+
+      const fsrsUpdate = scheduleReview(
+        problem,
+        data.rating,
+        user?.fsrsTargetRetention ?? undefined,
+        now
+      );
+
+      // Optimistic guard: only the writer that still sees the lastReview we read
+      // wins; a racing duplicate updates 0 rows and falls through to a no-op.
+      const guard = await tx.problem.updateMany({
+        where: { id: problem.id, lastReview: problem.lastReview ?? null },
+        data: { ...fsrsUpdate, reviewCount: { increment: 1 } },
+      });
+      if (guard.count === 0) {
+        return { deduped: true, problemId: problem.id, nextReviewDate: problem.nextReviewDate };
+      }
+
+      await tx.review.create({
+        data: { userId, problemId: problem.id, date: now, rating: data.rating },
+      });
+
+      return { deduped: false, problemId: problem.id, nextReviewDate: fsrsUpdate.nextReviewDate };
     });
 
-    await prisma.review.create({
-      data: { userId, problemId: problem.id, date: now, rating: data.rating },
-    });
-
-    return corsJson(req, {
-      success: true,
-      problemId: problem.id,
-      nextReviewDate: fsrsUpdate.nextReviewDate,
-    });
+    return corsJson(req, { success: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Capture failed";
     console.error("Extension capture error:", error);
