@@ -1,8 +1,11 @@
-// Popup: shows the due/reviewed summary and recent activity, mirrors the
-// website's active focus when one is set, or a sign-in prompt when there's no
-// session. All API access goes through the background worker.
+// Popup: shows the due/reviewed summary and a scrollable list of the problems
+// in the current queue (the active focus's queue when focused, otherwise the
+// due-today problems). Each row links straight to the problem so the website
+// can be skipped. The last summary is cached so the list paints instantly while
+// a fresh one loads. All API access goes through the background worker.
 const RS = globalThis.browser || globalThis.chrome;
 const BASE_URL = "https://repsheet.vercel.app";
+const CACHE_KEY = "rs_summary";
 
 function show(id) {
   for (const el of document.querySelectorAll("#loading, #signedout, #content")) {
@@ -17,60 +20,106 @@ function focusHref(focus) {
     : `${BASE_URL}/review?topic=${encodeURIComponent(focus.value)}`;
 }
 
-function renderFocusChips(chips) {
-  const wrap = document.getElementById("focusChips");
+// Recall (0..1) → a coarse tier used for the badge color.
+function recallTier(recall) {
+  if (recall < 0.5) return "low";
+  if (recall < 0.8) return "mid";
+  return "high";
+}
+
+function renderProblemList(problems) {
+  const wrap = document.getElementById("problemList");
   wrap.innerHTML = "";
-  if (!chips || chips.length === 0) {
+  if (!problems || problems.length === 0) {
     const hint = document.createElement("p");
-    hint.className = "muted chips-empty";
-    hint.textContent = "Pin patterns or skills in Settings to drill them here.";
+    hint.className = "muted list-empty";
+    hint.textContent = "Nothing in the queue right now.";
     wrap.appendChild(hint);
     return;
   }
-  for (const c of chips) {
-    const btn = document.createElement("button");
-    btn.className = `chip ${c.kind}`;
-    btn.textContent = c.label;
-    btn.title = `Open ${c.label}`;
-    btn.addEventListener("click", () => RS.tabs.create({ url: focusHref(c) }));
-    wrap.appendChild(btn);
+  for (const p of problems) {
+    const row = document.createElement("button");
+    row.className = "prow";
+    row.title = `Open ${p.name}`;
+
+    const name = document.createElement("span");
+    name.className = "prow-name";
+    name.textContent = p.name;
+
+    const recall = document.createElement("span");
+    recall.className = `prow-recall ${recallTier(p.recall)}`;
+    recall.textContent = `${Math.round(p.recall * 100)}%`;
+
+    row.append(name, recall);
+    row.addEventListener("click", () =>
+      RS.tabs.create({ url: p.url || BASE_URL + "/review" })
+    );
+    wrap.appendChild(row);
   }
 }
 
-function applyFocus(focus) {
-  const banner = document.getElementById("focusBanner");
-  const dueLabel = document.getElementById("dueLabel");
-  const due = document.getElementById("due");
-  const reviewBtn = document.getElementById("review");
+function renderFooter(activeFocus) {
+  const footer = document.getElementById("focusFooter");
+  footer.textContent = activeFocus ? `Focus: ${activeFocus.label}` : "Due today";
+}
 
-  if (focus) {
-    document.getElementById("focusName").textContent = focus.label;
-    document.getElementById("openFocus").onclick = () => RS.tabs.create({ url: focusHref(focus) });
-    banner.classList.remove("hidden");
-    dueLabel.textContent = "In focus";
-    due.textContent = focus.count ?? 0;
+function applyReviewButton(activeFocus) {
+  const reviewBtn = document.getElementById("review");
+  if (activeFocus) {
     reviewBtn.textContent = "Open focus";
-    reviewBtn.onclick = () => RS.tabs.create({ url: focusHref(focus) });
+    reviewBtn.onclick = () => RS.tabs.create({ url: focusHref(activeFocus) });
   } else {
-    banner.classList.add("hidden");
-    dueLabel.textContent = "Due today";
     reviewBtn.textContent = "Go to review";
     reviewBtn.onclick = () => RS.tabs.create({ url: BASE_URL + "/review" });
   }
 }
 
-async function load() {
+function applySummary(summary) {
+  document.getElementById("due").textContent = summary.dueToday ?? 0;
+  document.getElementById("reviewed").textContent = summary.reviewedToday ?? 0;
+  document.getElementById("backlog").textContent = summary.backlog ?? 0;
+  renderProblemList(summary.problems);
+  renderFooter(summary.activeFocus);
+  applyReviewButton(summary.activeFocus);
+}
+
+async function readCache() {
+  try {
+    const stored = await RS.storage.local.get(CACHE_KEY);
+    return stored && stored[CACHE_KEY] ? stored[CACHE_KEY] : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeCache(summary) {
+  try {
+    RS.storage.local.set({ [CACHE_KEY]: summary });
+  } catch (e) {
+    /* best-effort */
+  }
+}
+
+// Fetches a fresh summary, repaints, and updates the cache.
+async function refresh() {
   const summary = await RS.runtime.sendMessage({ type: "summary" });
   if (!summary || summary.error === "Unauthorized" || !summary.success) {
     show("signedout");
     return;
   }
-  document.getElementById("due").textContent = summary.dueToday ?? 0;
-  document.getElementById("reviewed").textContent = summary.reviewedToday ?? 0;
-  document.getElementById("backlog").textContent = summary.backlog ?? 0;
-  renderFocusChips(summary.focusChips);
-  applyFocus(summary.activeFocus);
+  applySummary(summary);
+  writeCache(summary);
   show("content");
+}
+
+// Paint the cached list immediately (if any), then refresh in the background.
+async function init() {
+  const cached = await readCache();
+  if (cached) {
+    applySummary(cached);
+    show("content");
+  }
+  await refresh();
 }
 
 document.getElementById("open").addEventListener("click", () => {
@@ -83,11 +132,10 @@ document.getElementById("signin").addEventListener("click", async () => {
 const refreshBtn = document.getElementById("refresh");
 refreshBtn.addEventListener("click", async () => {
   refreshBtn.classList.add("spin");
-  show("loading");
-  await load();
+  await refresh();
   // Also nudge the badge to recompute against the latest state.
   RS.runtime.sendMessage({ type: "refreshBadge" });
   setTimeout(() => refreshBtn.classList.remove("spin"), 600);
 });
 
-load();
+init();

@@ -2,18 +2,32 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserIdFromRequest } from "@/lib/extensionAuth";
 import { corsJson, preflight } from "@/lib/extensionCors";
-import { parseFocusTag, parseFocusTags } from "@/lib/focusTags";
+import { parseFocusTag } from "@/lib/focusTags";
 import { getCatalog } from "@/lib/patterns";
 import { buildPatternView, splitPatternProblems, type MatchableProblem } from "@/lib/patterns/match";
+import { computeRecall } from "@/lib/fsrs";
+
+/** A single row for the popup's problem list: name, where it links, recall %. */
+interface ProblemRow {
+  name: string;
+  url: string | null;
+  recall: number;
+}
 
 interface ActiveFocusSummary {
   kind: "pattern" | "skill";
   value: string;
   label: string;
   count: number;
+  problems: ProblemRow[];
 }
 
-/** Computes the active-focus label + in-queue count, mirroring the review page. */
+/** Most-urgent first: lowest recall (closest to forgotten) at the top. */
+function byRecallAsc(a: ProblemRow, b: ProblemRow): number {
+  return a.recall - b.recall;
+}
+
+/** Computes the active-focus label, queue count, and problem rows for the popup. */
 async function computeActiveFocus(
   userId: string,
   activeFocus: string | null | undefined,
@@ -23,22 +37,42 @@ async function computeActiveFocus(
   if (!tag) return null;
 
   if (tag.kind === "skill") {
-    const count = await prisma.problem.count({
+    const problems = await prisma.problem.findMany({
       where: { userId, category: { has: tag.value } },
+      select: { name: true, link: true, stability: true, lastReview: true },
     });
-    return { kind: "skill", value: tag.value, label: tag.value, count };
+    const rows: ProblemRow[] = problems
+      .map((p) => ({ name: p.name, url: p.link, recall: computeRecall(p, now) }))
+      .sort(byRecallAsc);
+    return { kind: "skill", value: tag.value, label: tag.value, count: rows.length, problems: rows };
   }
 
   // pattern: match the user's problems to the catalog pattern (due + in-progress)
   const problems = await prisma.problem.findMany({
     where: { userId },
-    select: { id: true, name: true, link: true, platform: true, nextReviewDate: true, lastRating: true },
+    select: {
+      id: true, name: true, link: true, platform: true,
+      nextReviewDate: true, lastRating: true, stability: true, lastReview: true,
+    },
   });
   const matchable: MatchableProblem[] = problems;
   const view = buildPatternView(getCatalog(), matchable, now).find((v) => v.id === tag.value);
   if (!view) return null;
   const { due, inProgress } = splitPatternProblems(view);
-  return { kind: "pattern", value: tag.value, label: view.name, count: due.length + inProgress.length };
+
+  // Recall lives on the user's Problem row, keyed by the view's problemId.
+  const fsrsById = new Map(problems.map((p) => [p.id, p]));
+  const rows: ProblemRow[] = [...due, ...inProgress]
+    .map((p) => {
+      const src = p.problemId ? fsrsById.get(p.problemId) : null;
+      return {
+        name: p.name,
+        url: p.url,
+        recall: src ? computeRecall(src, now) : 1,
+      };
+    })
+    .sort(byRecallAsc);
+  return { kind: "pattern", value: tag.value, label: view.name, count: rows.length, problems: rows };
 }
 
 export async function OPTIONS(req: NextRequest) {
@@ -58,7 +92,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { dailyReviewLimit: true, activeFocus: true, focusTags: true },
+      select: { dailyReviewLimit: true, activeFocus: true },
     });
     const limit = user?.dailyReviewLimit ?? 20;
 
@@ -68,25 +102,22 @@ export async function GET(req: NextRequest) {
 
     const problems = await prisma.problem.findMany({
       where: { userId },
-      select: { nextReviewDate: true, lastReview: true },
+      select: { name: true, link: true, nextReviewDate: true, lastReview: true, stability: true },
     });
 
     let totalDue = 0;
     let reviewedToday = 0;
+    const dueRows: ProblemRow[] = [];
     for (const p of problems) {
-      if (p.nextReviewDate && p.nextReviewDate <= now) totalDue++;
+      if (p.nextReviewDate && p.nextReviewDate <= now) {
+        totalDue++;
+        dueRows.push({ name: p.name, url: p.link, recall: computeRecall(p, now) });
+      }
       if (p.lastReview && p.lastReview >= todayStart && p.lastReview < todayEnd) reviewedToday++;
     }
+    dueRows.sort(byRecallAsc);
     const cappedDue = Math.min(totalDue, limit);
     const dueToday = Math.max(0, cappedDue - reviewedToday);
-
-    // Pinned focus chips for one-tap launch in the popup.
-    const patternNames = new Map(getCatalog().patterns.map((p) => [p.id, p.name]));
-    const focusChips = parseFocusTags(user?.focusTags ?? []).map((t) => ({
-      kind: t.kind,
-      value: t.value,
-      label: t.kind === "pattern" ? patternNames.get(t.value) ?? t.value : t.value,
-    }));
 
     const activeFocus = await computeActiveFocus(userId, user?.activeFocus, now);
 
@@ -95,8 +126,11 @@ export async function GET(req: NextRequest) {
       dueToday,
       reviewedToday,
       backlog: Math.max(0, totalDue - cappedDue),
-      focusChips,
-      activeFocus,
+      // Focus meta drives the footer label + badge; problems is the rendered list.
+      activeFocus: activeFocus
+        ? { kind: activeFocus.kind, value: activeFocus.value, label: activeFocus.label, count: activeFocus.count }
+        : null,
+      problems: activeFocus ? activeFocus.problems : dueRows,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Summary failed";

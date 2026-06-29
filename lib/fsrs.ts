@@ -59,6 +59,22 @@ export function scheduleReview(
   };
 }
 
+/**
+ * Current recall probability (FSRS retrievability) for a card, derived from its
+ * stored stability and time since last review. Matches fsrs.js's own forgetting
+ * curve: R = (1 + t/(9S))^-1, with t in days. A card that has never been
+ * reviewed (or has no stability) is treated as fully fresh (1).
+ */
+export function computeRecall(
+  problem: Pick<FsrsCardState, "stability" | "lastReview">,
+  now: Date = new Date()
+): number {
+  if (!problem.lastReview || !problem.stability || problem.stability <= 0) return 1;
+  const elapsedDays = (now.getTime() - problem.lastReview.getTime()) / (24 * 60 * 60 * 1000);
+  if (elapsedDays <= 0) return 1;
+  return Math.pow(1 + elapsedDays / (9 * problem.stability), -1);
+}
+
 /** Valid FSRS ratings: 1=Again, 2=Hard, 3=Good, 4=Easy. */
 export function isValidRating(rating: unknown): rating is number {
   return typeof rating === "number" && rating >= 1 && rating <= 4;
