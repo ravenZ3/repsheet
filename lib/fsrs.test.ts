@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scheduleReview, isValidRating } from "./fsrs";
+import { scheduleReview, isValidRating, computeRecall } from "./fsrs";
 
 describe("isValidRating", () => {
   it("accepts 1..4", () => {
@@ -11,6 +11,30 @@ describe("isValidRating", () => {
     expect(isValidRating(5)).toBe(false);
     expect(isValidRating("3")).toBe(false);
     expect(isValidRating(undefined)).toBe(false);
+  });
+});
+
+describe("computeRecall", () => {
+  const now = new Date("2026-06-29T00:00:00Z");
+  const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
+
+  it("is 1 for a card never reviewed or missing stability", () => {
+    expect(computeRecall({ stability: 10, lastReview: null }, now)).toBe(1);
+    expect(computeRecall({ stability: null, lastReview: daysAgo(5) }, now)).toBe(1);
+    expect(computeRecall({ stability: 0, lastReview: daysAgo(5) }, now)).toBe(1);
+  });
+
+  it("is 1 just after review and decays as time passes", () => {
+    expect(computeRecall({ stability: 10, lastReview: now }, now)).toBe(1);
+    const fresh = computeRecall({ stability: 10, lastReview: daysAgo(1) }, now);
+    const stale = computeRecall({ stability: 10, lastReview: daysAgo(30) }, now);
+    expect(fresh).toBeLessThan(1);
+    expect(stale).toBeLessThan(fresh);
+  });
+
+  it("hits ~0.9 when elapsed days equal one FSRS half-step (S days)", () => {
+    // R = (1 + t/(9S))^-1; at t = S, R = 9/10 = 0.9.
+    expect(computeRecall({ stability: 10, lastReview: daysAgo(10) }, now)).toBeCloseTo(0.9, 5);
   });
 });
 
