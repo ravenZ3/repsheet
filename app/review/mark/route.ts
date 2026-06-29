@@ -2,7 +2,7 @@
 import prisma from '@/lib/prisma'; // Use the shared instance
 
 import { NextRequest, NextResponse } from 'next/server';
-import { FSRS, Card, Rating } from 'fsrs.js';
+import { scheduleReview } from '@/lib/fsrs';
 // Import authentication tools
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
@@ -50,26 +50,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Problem not found or you do not have permission' }, { status: 404 });
     }
 
-    // --- Your FSRS logic is great, no changes needed here ---
-    const fsrs = new FSRS();
-    fsrs.p.maximum_interval = 365;
-    if (userSettings?.fsrsTargetRetention) {
-        fsrs.p.request_retention = userSettings.fsrsTargetRetention;
-    }
-
+    // --- Shared FSRS scheduling (see lib/fsrs.ts) ---
     const now = new Date();
-    const card = new Card();
-    card.state = problem.fsrsState ?? 0;
-    card.due = problem.nextReviewDate ?? now;
-    card.last_review = problem.lastReview ?? now;
-    card.stability = problem.stability ?? 2.5;
-    card.difficulty = problem.fsrsDifficulty ?? 3.5;
-
-    const ratingEnum = rating as Rating;
-    // Note: fsrs.repeat() returns a schedule object, not an updated card directly.
-    // The result is a dictionary mapping ratings to their outcomes.
-    const schedule = fsrs.repeat(card, now);
-    const updatedCardInfo = schedule[ratingEnum];
+    const fsrsUpdate = scheduleReview(problem, rating, userSettings?.fsrsTargetRetention ?? undefined, now);
 
     // --- STEP 4: Securely update the problem ---
     // Use `updateMany` for an atomic and authorized update.
@@ -79,14 +62,8 @@ export async function POST(req: NextRequest) {
         userId: session.user.id, // <-- SECURITY CHECK
       },
       data: {
-        stability: updatedCardInfo.card.stability,
-        fsrsDifficulty: updatedCardInfo.card.difficulty,
-        fsrsState: updatedCardInfo.card.state,
-        lastRating: rating,
-        lastReview: now,
+        ...fsrsUpdate,
         reviewCount: { increment: 1 },
-        nextReviewDate: updatedCardInfo.card.due,
-
       },
     });
 

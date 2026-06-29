@@ -44,3 +44,6 @@ next-env.d.ts
 
 # local planning scaffolding (specs & plans), kept out of the repo
 docs/superpowers/
+
+# Browser extension build output
+extension/dist/

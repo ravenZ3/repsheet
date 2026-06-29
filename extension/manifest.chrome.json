@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Repsheet — Capture & Review",
+  "version": "0.1.0",
+  "description": "Capture and FSRS-rate competitive programming problems the moment you solve them, plus review reminders.",
+  "permissions": ["cookies", "storage", "alarms"],
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "https://codeforces.com/*",
+    "https://repsheet.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "Repsheet"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://leetcode.com/problems/*",
+        "https://codeforces.com/contest/*",
+        "https://codeforces.com/problemset/problem/*",
+        "https://codeforces.com/gym/*"
+      ],
+      "js": [
+        "src/browser-shim.js",
+        "src/config.js",
+        "src/adapters/leetcode.js",
+        "src/adapters/codeforces.js",
+        "src/overlay.js",
+        "src/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
