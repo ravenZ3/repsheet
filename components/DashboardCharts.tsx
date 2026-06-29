@@ -378,18 +378,18 @@ export default function DashboardCharts({ data, progress }: { data: DashboardDat
 			</div>
 
 			{/* FSRS Progress pills — always on top */}
-			<div className="grid grid-cols-3 gap-2">
-				<div className="bg-white dark:bg-[#111] rounded-[12px] border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5">
-					<span className="text-[9px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">Due today</span>
-					<span className="text-[28px] leading-none font-bold [font-family:var(--font-merriweather)] text-gray-900 dark:text-gray-100">{progress.dueToday}</span>
+			<div className="grid grid-cols-3 gap-2 sm:gap-3">
+				<div className="bg-white dark:bg-[#111] rounded-[12px] sm:rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5 sm:py-5 sm:px-4 sm:gap-1.5">
+					<span className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">Due today</span>
+					<span className="text-[28px] sm:text-[48px] md:text-[56px] leading-none font-bold [font-family:var(--font-merriweather)] text-gray-900 dark:text-gray-100">{progress.dueToday}</span>
 				</div>
-				<div className="bg-white dark:bg-[#111] rounded-[12px] border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5">
-					<span className="text-[9px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">Reviewed</span>
-					<span className="text-[28px] leading-none font-bold [font-family:var(--font-merriweather)] text-green-600 dark:text-green-400">{progress.reviewedToday}</span>
+				<div className="bg-white dark:bg-[#111] rounded-[12px] sm:rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5 sm:py-5 sm:px-4 sm:gap-1.5">
+					<span className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">Reviewed</span>
+					<span className="text-[28px] sm:text-[48px] md:text-[56px] leading-none font-bold [font-family:var(--font-merriweather)] text-green-600 dark:text-green-400">{progress.reviewedToday}</span>
 				</div>
-				<div className="bg-white dark:bg-[#111] rounded-[12px] border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5">
-					<span className="text-[9px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">{progress.backlog > 0 ? `~${progress.daysToClear}d to clear` : "Backlog"}</span>
-					<span className={`text-[28px] leading-none font-bold [font-family:var(--font-merriweather)] ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>+{progress.backlog}</span>
+				<div className="bg-white dark:bg-[#111] rounded-[12px] sm:rounded-[16px] shadow-xl border border-gray-200 dark:border-white/[0.08] flex flex-col items-center justify-center py-2.5 px-2 gap-0.5 sm:py-5 sm:px-4 sm:gap-1.5">
+					<span className="text-[9px] sm:text-[11px] font-medium text-gray-400 dark:text-[#555] uppercase tracking-wide">{progress.backlog > 0 ? `~${progress.daysToClear}d to clear` : "Backlog"}</span>
+					<span className={`text-[28px] sm:text-[48px] md:text-[56px] leading-none font-bold [font-family:var(--font-merriweather)] ${progress.backlog > 0 ? "text-orange-500" : "text-gray-900 dark:text-gray-100"}`}>+{progress.backlog}</span>
 				</div>
 			</div>
 

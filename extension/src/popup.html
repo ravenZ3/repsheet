@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="header">
+      <span class="brand">RepSheet</span>
+      <button id="open" class="link">Open ↗</button>
+    </div>
+
+    <div id="loading" class="muted">Loading…</div>
+
+    <div id="signedout" class="hidden">
+      <p class="muted">Sign in on the website to start capturing solves.</p>
+      <button id="signin" class="primary">Sign in to Repsheet</button>
+    </div>
+
+    <div id="content" class="hidden">
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-label">Due today</span>
+          <span class="stat-num" id="due">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Reviewed</span>
+          <span class="stat-num green" id="reviewed">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Backlog</span>
+          <span class="stat-num orange" id="backlog">0</span>
+        </div>
+      </div>
+
+      <div class="recent-title">Recent</div>
+      <ul id="recent" class="recent"></ul>
+
+      <button id="review" class="primary">Go to review</button>
+    </div>
+  </body>
+  <script src="popup.js"></script>
+</html>
