@@ -40,23 +40,31 @@ describe("computeRecall", () => {
 
 describe("isReviewDue", () => {
   const now = new Date("2026-06-30T12:00:00Z");
+  const reviewed = new Date("2026-06-29T12:00:00Z");
   const hoursAway = (n: number) => new Date(now.getTime() + n * 60 * 60 * 1000);
 
-  it("is due when the card has never been scheduled", () => {
-    expect(isReviewDue({ nextReviewDate: null }, now)).toBe(true);
-    expect(isReviewDue({}, now)).toBe(true);
+  it("is due when a reviewed card has no next date scheduled", () => {
+    expect(isReviewDue({ nextReviewDate: null, lastReview: reviewed }, now)).toBe(true);
   });
 
   it("is due when nextReviewDate has arrived or passed", () => {
-    expect(isReviewDue({ nextReviewDate: now }, now)).toBe(true);
-    expect(isReviewDue({ nextReviewDate: hoursAway(-1) }, now)).toBe(true);
+    expect(isReviewDue({ nextReviewDate: now, lastReview: reviewed }, now)).toBe(true);
+    expect(isReviewDue({ nextReviewDate: hoursAway(-1), lastReview: reviewed }, now)).toBe(true);
   });
 
-  it("is NOT due when nextReviewDate is still in the future", () => {
+  it("is NOT due when a reviewed card's nextReviewDate is still in the future", () => {
     // e.g. a problem just rated today, now scheduled for tomorrow, but still
     // surfaced by focused practice mode — re-rating it must be a no-op.
-    expect(isReviewDue({ nextReviewDate: hoursAway(1) }, now)).toBe(false);
-    expect(isReviewDue({ nextReviewDate: hoursAway(24) }, now)).toBe(false);
+    expect(isReviewDue({ nextReviewDate: hoursAway(1), lastReview: reviewed }, now)).toBe(false);
+    expect(isReviewDue({ nextReviewDate: hoursAway(24), lastReview: reviewed }, now)).toBe(false);
+  });
+
+  it("is ALWAYS due when never reviewed, even with a future nextReviewDate", () => {
+    // A just-synced solve: nextReviewDate ≈ solve time and lastReview is null.
+    // The very first rating must always be accepted, whatever the date says.
+    expect(isReviewDue({ nextReviewDate: hoursAway(1), lastReview: null }, now)).toBe(true);
+    expect(isReviewDue({ nextReviewDate: hoursAway(24), lastReview: null }, now)).toBe(true);
+    expect(isReviewDue({}, now)).toBe(true);
   });
 });
 

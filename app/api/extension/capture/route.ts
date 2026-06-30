@@ -3,7 +3,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { getUserIdFromRequest } from "@/lib/extensionAuth";
 import { corsJson, preflight } from "@/lib/extensionCors";
-import { scheduleReview, isValidRating } from "@/lib/fsrs";
+import { scheduleReview, isValidRating, isReviewDue } from "@/lib/fsrs";
 import { normalizeDifficulty } from "@/lib/difficulty";
 
 export async function OPTIONS(req: NextRequest) {
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const isDue = isNew || !problem.nextReviewDate || problem.nextReviewDate <= now;
+      const isDue = isNew || isReviewDue(problem, now);
       if (!isDue) {
         return { deduped: true, problemId: problem.id, nextReviewDate: problem.nextReviewDate };
       }

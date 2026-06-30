@@ -76,17 +76,22 @@ export function computeRecall(
 }
 
 /**
- * Whether a review submitted at `now` should advance the FSRS schedule. A review
- * counts only when the card has never been scheduled, or its nextReviewDate has
- * arrived. Re-rating a card whose nextReviewDate is still in the future — a
+ * Whether a review submitted at `now` should advance the FSRS schedule. The very
+ * first review of a card (never reviewed → `lastReview` is null) is always
+ * accepted, whatever its nextReviewDate says — a just-imported solve carries a
+ * nextReviewDate equal to its solve time, which can sit a hair in the future, and
+ * dropping that first rating would leave the card stuck due-now and unrateable.
+ * Once reviewed, a review counts only when the card has no next date or its
+ * nextReviewDate has arrived; re-rating a card still scheduled in the future — a
  * not-due problem surfaced by focused practice mode, a double-click, or a
  * duplicate request — must be an idempotent no-op so it can't inflate
  * stability/reviewCount. Mirrors the extension capture endpoint's dedupe gate.
  */
 export function isReviewDue(
-  problem: Pick<FsrsCardState, "nextReviewDate">,
+  problem: Pick<FsrsCardState, "nextReviewDate" | "lastReview">,
   now: Date = new Date()
 ): boolean {
+  if (!problem.lastReview) return true;
   return !problem.nextReviewDate || problem.nextReviewDate <= now;
 }
 

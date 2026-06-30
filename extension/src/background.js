@@ -115,7 +115,11 @@ async function capture(payload) {
   });
   if (status === 401) return { error: "Unauthorized" };
   if (ok) {
-    await markCaptured(link);
+    // Only remember a capture that actually advanced FSRS. A deduped no-op must
+    // NOT poison the cooldown cache — otherwise a rating the server never
+    // recorded would be wrongly treated as "already logged", blocking the real
+    // first rating of a problem on every retry.
+    if (body && body.success && !body.deduped) await markCaptured(link);
     refreshBadge();
     return body;
   }
