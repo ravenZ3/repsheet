@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scheduleReview, isValidRating, computeRecall } from "./fsrs";
+import { scheduleReview, isValidRating, computeRecall, isReviewDue } from "./fsrs";
 
 describe("isValidRating", () => {
   it("accepts 1..4", () => {
@@ -35,6 +35,28 @@ describe("computeRecall", () => {
   it("hits ~0.9 when elapsed days equal one FSRS half-step (S days)", () => {
     // R = (1 + t/(9S))^-1; at t = S, R = 9/10 = 0.9.
     expect(computeRecall({ stability: 10, lastReview: daysAgo(10) }, now)).toBeCloseTo(0.9, 5);
+  });
+});
+
+describe("isReviewDue", () => {
+  const now = new Date("2026-06-30T12:00:00Z");
+  const hoursAway = (n: number) => new Date(now.getTime() + n * 60 * 60 * 1000);
+
+  it("is due when the card has never been scheduled", () => {
+    expect(isReviewDue({ nextReviewDate: null }, now)).toBe(true);
+    expect(isReviewDue({}, now)).toBe(true);
+  });
+
+  it("is due when nextReviewDate has arrived or passed", () => {
+    expect(isReviewDue({ nextReviewDate: now }, now)).toBe(true);
+    expect(isReviewDue({ nextReviewDate: hoursAway(-1) }, now)).toBe(true);
+  });
+
+  it("is NOT due when nextReviewDate is still in the future", () => {
+    // e.g. a problem just rated today, now scheduled for tomorrow, but still
+    // surfaced by focused practice mode — re-rating it must be a no-op.
+    expect(isReviewDue({ nextReviewDate: hoursAway(1) }, now)).toBe(false);
+    expect(isReviewDue({ nextReviewDate: hoursAway(24) }, now)).toBe(false);
   });
 });
 

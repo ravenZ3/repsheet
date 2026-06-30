@@ -2,7 +2,7 @@
 import prisma from '@/lib/prisma'; // Use the shared instance
 
 import { NextRequest, NextResponse } from 'next/server';
-import { scheduleReview } from '@/lib/fsrs';
+import { scheduleReview, isReviewDue } from '@/lib/fsrs';
 // Import authentication tools
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
@@ -52,37 +52,54 @@ export async function POST(req: NextRequest) {
 
     // --- Shared FSRS scheduling (see lib/fsrs.ts) ---
     const now = new Date();
-    const fsrsUpdate = scheduleReview(problem, rating, userSettings?.fsrsTargetRetention ?? undefined, now);
 
-    // --- STEP 4: Securely update the problem ---
-    // Use `updateMany` for an atomic and authorized update.
-    const updateResult = await prisma.problem.updateMany({
-      where: {
-        id,
-        userId: session.user.id, // <-- SECURITY CHECK
-      },
-      data: {
-        ...fsrsUpdate,
-        reviewCount: { increment: 1 },
-      },
-    });
-
-    // STEP 5: Verify the update was successful
-    if (updateResult.count === 0) {
-      // This case is rare if the findFirst succeeded, but it's a good safeguard.
-      return NextResponse.json({ error: 'Failed to update the problem' }, { status: 500 });
+    // Idempotency guard. Focused practice mode (skill/pattern) surfaces solved
+    // problems regardless of their nextReviewDate, so a problem just rated today
+    // stays on the card and could be re-rated — each re-rate would re-run FSRS
+    // and append a Review, inflating stability/reviewCount. Only advance the
+    // schedule for a genuinely-due (or never-scheduled) review; anything else is
+    // a no-op. Done in a transaction with an optimistic guard on lastReview so
+    // two concurrent clicks can't both schedule. Mirrors the capture endpoint.
+    if (!isReviewDue(problem, now)) {
+      return NextResponse.json(
+        { success: true, deduped: true, nextReviewDate: problem.nextReviewDate },
+        { status: 200 }
+      );
     }
 
-    await prisma.review.create({
-      data: {
-        userId: session.user.id,
-        problemId: id,
-        date: now,
-        rating,
-      },
-    })
+    const fsrsUpdate = scheduleReview(problem, rating, userSettings?.fsrsTargetRetention ?? undefined, now);
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    const deduped = await prisma.$transaction(async (tx) => {
+      // Optimistic guard: only the writer that still sees the lastReview we read
+      // wins; a racing duplicate updates 0 rows and becomes a no-op.
+      const guard = await tx.problem.updateMany({
+        where: {
+          id,
+          userId: session.user.id, // <-- SECURITY CHECK
+          lastReview: problem.lastReview ?? null,
+        },
+        data: {
+          ...fsrsUpdate,
+          reviewCount: { increment: 1 },
+        },
+      });
+      if (guard.count === 0) return true;
+
+      await tx.review.create({
+        data: {
+          userId: session.user.id,
+          problemId: id,
+          date: now,
+          rating,
+        },
+      });
+      return false;
+    });
+
+    return NextResponse.json(
+      { success: true, deduped, nextReviewDate: fsrsUpdate.nextReviewDate },
+      { status: 200 }
+    );
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Failed to mark review';
     console.error('❌ Server error:', err);
