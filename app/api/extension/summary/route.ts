@@ -6,25 +6,15 @@ import { parseFocusTag } from "@/lib/focusTags";
 import { getCatalog } from "@/lib/patterns";
 import { buildPatternView, splitPatternProblems, type MatchableProblem } from "@/lib/patterns/match";
 import { computeRecall } from "@/lib/fsrs";
-
-/** A single row for the popup's problem list: name, where it links, recall %. */
-interface ProblemRow {
-  name: string;
-  url: string | null;
-  recall: number;
-}
+import { buildPatternFocusLists, byRecallAsc, type ProblemRow, type UnsolvedRow } from "@/lib/extensionFocus";
 
 interface ActiveFocusSummary {
   kind: "pattern" | "skill";
   value: string;
   label: string;
   count: number;
-  problems: ProblemRow[];
-}
-
-/** Most-urgent first: lowest recall (closest to forgotten) at the top. */
-function byRecallAsc(a: ProblemRow, b: ProblemRow): number {
-  return a.recall - b.recall;
+  problems: ProblemRow[]; // the agenda: due-only
+  unsolved: UnsolvedRow[];
 }
 
 /** Computes the active-focus label, queue count, and problem rows for the popup. */
@@ -39,12 +29,13 @@ async function computeActiveFocus(
   if (tag.kind === "skill") {
     const problems = await prisma.problem.findMany({
       where: { userId, category: { has: tag.value } },
-      select: { name: true, link: true, stability: true, lastReview: true },
+      select: { name: true, link: true, nextReviewDate: true, stability: true, lastReview: true },
     });
-    const rows: ProblemRow[] = problems
+    const agenda: ProblemRow[] = problems
+      .filter((p) => p.nextReviewDate != null && p.nextReviewDate <= now)
       .map((p) => ({ name: p.name, url: p.link, recall: computeRecall(p, now) }))
       .sort(byRecallAsc);
-    return { kind: "skill", value: tag.value, label: tag.value, count: rows.length, problems: rows };
+    return { kind: "skill", value: tag.value, label: tag.value, count: agenda.length, problems: agenda, unsolved: [] };
   }
 
   // pattern: match the user's problems to the catalog pattern (due + in-progress)
@@ -58,21 +49,16 @@ async function computeActiveFocus(
   const matchable: MatchableProblem[] = problems;
   const view = buildPatternView(getCatalog(), matchable, now).find((v) => v.id === tag.value);
   if (!view) return null;
-  const { due, inProgress } = splitPatternProblems(view);
+  const buckets = splitPatternProblems(view);
 
   // Recall lives on the user's Problem row, keyed by the view's problemId.
   const fsrsById = new Map(problems.map((p) => [p.id, p]));
-  const rows: ProblemRow[] = [...due, ...inProgress]
-    .map((p) => {
-      const src = p.problemId ? fsrsById.get(p.problemId) : null;
-      return {
-        name: p.name,
-        url: p.url,
-        recall: src ? computeRecall(src, now) : 1,
-      };
-    })
-    .sort(byRecallAsc);
-  return { kind: "pattern", value: tag.value, label: view.name, count: rows.length, problems: rows };
+  const recallFor = (problemId: string | null) => {
+    const src = problemId ? fsrsById.get(problemId) : null;
+    return src ? computeRecall(src, now) : 1;
+  };
+  const { agenda, unsolved } = buildPatternFocusLists(buckets, recallFor);
+  return { kind: "pattern", value: tag.value, label: view.name, count: agenda.length, problems: agenda, unsolved };
 }
 
 export async function OPTIONS(req: NextRequest) {
@@ -131,6 +117,8 @@ export async function GET(req: NextRequest) {
         ? { kind: activeFocus.kind, value: activeFocus.value, label: activeFocus.label, count: activeFocus.count }
         : null,
       problems: activeFocus ? activeFocus.problems : dueRows,
+      // Pick-next list: present only in focus mode (catalog-backed); empty otherwise.
+      unsolved: activeFocus ? activeFocus.unsolved : [],
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Summary failed";
