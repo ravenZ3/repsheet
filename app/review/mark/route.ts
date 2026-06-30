@@ -70,13 +70,16 @@ export async function POST(req: NextRequest) {
     const fsrsUpdate = scheduleReview(problem, rating, userSettings?.fsrsTargetRetention ?? undefined, now);
 
     const deduped = await prisma.$transaction(async (tx) => {
-      // Optimistic guard: only the writer that still sees the lastReview we read
-      // wins; a racing duplicate updates 0 rows and becomes a no-op.
+      // Optimistic guard: only the writer that still sees the reviewCount we read
+      // wins; a racing duplicate updates 0 rows and becomes a no-op. We lock on
+      // reviewCount (a non-null Int that changes every review), NOT lastReview —
+      // Prisma+Mongo's `lastReview: null` filter matches no rows, so a
+      // never-reviewed problem would always guard 0 and drop its first rating.
       const guard = await tx.problem.updateMany({
         where: {
           id,
           userId: session.user.id, // <-- SECURITY CHECK
-          lastReview: problem.lastReview ?? null,
+          reviewCount: problem.reviewCount,
         },
         data: {
           ...fsrsUpdate,

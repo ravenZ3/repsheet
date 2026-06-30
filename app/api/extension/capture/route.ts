@@ -99,10 +99,13 @@ export async function POST(req: NextRequest) {
         now
       );
 
-      // Optimistic guard: only the writer that still sees the lastReview we read
-      // wins; a racing duplicate updates 0 rows and falls through to a no-op.
+      // Optimistic guard: only the writer that still sees the reviewCount we
+      // read wins; a racing duplicate updates 0 rows and falls through to a
+      // no-op. Locked on reviewCount (non-null Int), NOT lastReview — Prisma+Mongo
+      // matches no rows for `lastReview: null`, so a never-reviewed problem would
+      // always guard 0 and silently drop its first rating.
       const guard = await tx.problem.updateMany({
-        where: { id: problem.id, lastReview: problem.lastReview ?? null },
+        where: { id: problem.id, reviewCount: problem.reviewCount },
         data: { ...fsrsUpdate, reviewCount: { increment: 1 } },
       });
       if (guard.count === 0) {
