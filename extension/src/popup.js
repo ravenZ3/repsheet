@@ -27,13 +27,15 @@ function recallTier(recall) {
   return "high";
 }
 
-function renderProblemList(problems) {
+function renderProblemList(problems, activeFocus) {
   const wrap = document.getElementById("problemList");
   wrap.innerHTML = "";
   if (!problems || problems.length === 0) {
     const hint = document.createElement("p");
     hint.className = "muted list-empty";
-    hint.textContent = "Nothing in the queue right now.";
+    hint.textContent = activeFocus
+      ? "All caught up in this focus 🎉"
+      : "Nothing in the queue right now.";
     wrap.appendChild(hint);
     return;
   }
@@ -58,6 +60,38 @@ function renderProblemList(problems) {
   }
 }
 
+// The "pick next" list — compact text links, shown only in focus mode when
+// there are still catalog problems left to attempt.
+function renderUnsolved(unsolved, activeFocus) {
+  const section = document.getElementById("unsolvedSection");
+  const wrap = document.getElementById("unsolvedList");
+  wrap.innerHTML = "";
+  if (!activeFocus || !unsolved || unsolved.length === 0) {
+    section.classList.add("hidden");
+    return;
+  }
+  for (const p of unsolved) {
+    const row = document.createElement("button");
+    row.className = "lrow";
+    row.title = `Open ${p.name}`;
+
+    const name = document.createElement("span");
+    name.className = "lrow-name";
+    name.textContent = p.name;
+
+    const diff = document.createElement("span");
+    diff.className = `lrow-diff ${(p.difficulty || "").toLowerCase()}`;
+    diff.textContent = p.difficulty || "";
+
+    row.append(name, diff);
+    row.addEventListener("click", () =>
+      RS.tabs.create({ url: p.url || BASE_URL + "/review" })
+    );
+    wrap.appendChild(row);
+  }
+  section.classList.remove("hidden");
+}
+
 function renderFooter(activeFocus) {
   const footer = document.getElementById("focusFooter");
   footer.textContent = activeFocus ? `Focus: ${activeFocus.label}` : "Due today";
@@ -78,7 +112,8 @@ function applySummary(summary) {
   document.getElementById("due").textContent = summary.dueToday ?? 0;
   document.getElementById("reviewed").textContent = summary.reviewedToday ?? 0;
   document.getElementById("backlog").textContent = summary.backlog ?? 0;
-  renderProblemList(summary.problems);
+  renderProblemList(summary.problems, summary.activeFocus);
+  renderUnsolved(summary.unsolved, summary.activeFocus);
   renderFooter(summary.activeFocus);
   applyReviewButton(summary.activeFocus);
 }

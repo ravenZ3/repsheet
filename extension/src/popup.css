@@ -62,6 +62,35 @@ body {
 .prow-recall.high { color: #22c55e; background: rgba(34,197,94,.12); }
 .list-empty { margin: 8px 0; font-size: 12px; }
 
+.section-head {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .04em;
+  color: #777; margin: 2px 0 6px;
+}
+.link-list {
+  max-height: 150px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+  margin-bottom: 12px;
+}
+.link-list::-webkit-scrollbar { width: 6px; }
+.link-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+.lrow {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left; cursor: pointer;
+  background: none; border: none; color: #bbb;
+  border-radius: 6px; padding: 4px 6px; font-size: 12px;
+}
+.lrow:hover { background: rgba(255,255,255,.06); color: #fff; }
+.lrow-name {
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lrow-diff {
+  flex: none; font-size: 10px; font-weight: 600; color: #888;
+}
+.lrow-diff.easy { color: #22c55e; }
+.lrow-diff.medium { color: #fbbf24; }
+.lrow-diff.hard { color: #f87171; }
+
 .focus-footer {
   margin-top: 8px; text-align: center;
   font-size: 11px; color: #777;
