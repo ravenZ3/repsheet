@@ -103,15 +103,21 @@ export async function GET(req: NextRequest) {
     }
     dueRows.sort(byRecallAsc);
     const cappedDue = Math.min(totalDue, limit);
-    const dueToday = Math.max(0, cappedDue - reviewedToday);
 
     const activeFocus = await computeActiveFocus(userId, user?.activeFocus, now);
+
+    // Pills mirror the review page: in a focus they describe the focus, not the
+    // global queue (review/page.tsx scopes totalDue to the focus and forces
+    // backlog to 0). Reviewed stays global, matching the website. Outside a
+    // focus they fall back to the global due/backlog computation.
+    const dueToday = activeFocus ? activeFocus.count : Math.max(0, cappedDue - reviewedToday);
+    const backlog = activeFocus ? 0 : Math.max(0, totalDue - cappedDue);
 
     return corsJson(req, {
       success: true,
       dueToday,
       reviewedToday,
-      backlog: Math.max(0, totalDue - cappedDue),
+      backlog,
       // Focus meta drives the footer label + badge; problems is the rendered list.
       activeFocus: activeFocus
         ? { kind: activeFocus.kind, value: activeFocus.value, label: activeFocus.label, count: activeFocus.count }
