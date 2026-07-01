@@ -82,9 +82,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       const view = buildPatternView(getCatalog(), matchable, today).find((v) => v.id === patternFilter);
       if (view) {
         focusTitle = view.name;
-        const { due, inProgress, notSolved } = splitPatternProblems(view);
+        // Agenda is due-only: a problem rated today is scheduled into the future
+        // (moves to the inProgress bucket) and must leave the queue, not linger
+        // and get re-shown on reload. Not-yet-solved stays as suggestions below.
+        const { due, notSolved } = splitPatternProblems(view);
         const byId = new Map(all.map((p) => [p.id, p]));
-        problems = [...due, ...inProgress]
+        problems = due
           .map((cv) => (cv.problemId ? byId.get(cv.problemId) : null))
           .filter((p): p is Problem => Boolean(p));
         suggestions = notSolved.map((n) => ({ name: n.name, url: n.url, difficulty: n.difficulty }));
@@ -99,15 +102,17 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       totalDue = await prisma.problem.count({
         where: {
           userId: session.user.id,
-          ...(stateFilter === 'relearning' ? { fsrsState: 3 } : topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
+          ...(stateFilter === 'relearning' ? { fsrsState: 3 } : topicFilter ? { category: { has: topicFilter }, nextReviewDate: { lte: today } } : { nextReviewDate: { lte: today } }),
         },
       });
 
       problems = remainingQuota > 0 || topicFilter || stateFilter === 'relearning' ? await prisma.problem.findMany({
         where: {
           userId: session.user.id,
-          // If filtering by topic or relearning state, bypass the strict FSRS nextReviewDate timeline restriction
-          ...(stateFilter === 'relearning' ? { fsrsState: 3 } : topicFilter ? { category: { has: topicFilter } } : { nextReviewDate: { lte: today } }),
+          // Relearning bypasses the nextReviewDate timeline (show struggling
+          // problems regardless); topic + global are due-only so rated problems
+          // leave the queue instead of lingering and re-showing on reload.
+          ...(stateFilter === 'relearning' ? { fsrsState: 3 } : topicFilter ? { category: { has: topicFilter }, nextReviewDate: { lte: today } } : { nextReviewDate: { lte: today } }),
         },
         orderBy: (topicFilter || stateFilter === 'relearning') ? { lastReview: 'asc' } : { nextReviewDate: 'asc' },
         take: (topicFilter || stateFilter === 'relearning') ? 50 : remainingQuota, // Pull up to 50 items for focused practice mode
