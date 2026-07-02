@@ -47,3 +47,6 @@ docs/superpowers/
 
 # Browser extension build output
 extension/dist/
+
+# Ad-hoc local test/debug scripts — never committed
+test-scripts/
