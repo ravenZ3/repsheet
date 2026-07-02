@@ -23,26 +23,37 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     const resolvedParams = await searchParams;
     const platformFilter = resolvedParams.platform || 'All';
 
-	const user = await prisma.user.findUnique({
-		where: { id: session.user.id },
-		select: { dailyReviewLimit: true, focusTags: true },
-	})
-	const limit = user?.dailyReviewLimit || 20;
-	const focusChips = resolveFocusChips(user?.focusTags ?? []);
-
     const baseWhere: Prisma.ProblemWhereInput = { userId: session.user.id };
     if (platformFilter && platformFilter !== 'All') {
         baseWhere.platform = platformFilter;
     }
 
-	const problems = await prisma.problem.findMany({
-		where: baseWhere,
-		select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true, category: true, fsrsState: true, link: true },
-	})
-
 	const now = new Date();
 	const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 	const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+	const thresholdTime = todayStart.getTime() - 91 * 24 * 60 * 60 * 1000;
+	const thresholdDate = new Date(thresholdTime);
+
+	// Independent reads — fetch in parallel.
+	const [user, problems, reviews] = await Promise.all([
+		prisma.user.findUnique({
+			where: { id: session.user.id },
+			select: { dailyReviewLimit: true, focusTags: true },
+		}),
+		prisma.problem.findMany({
+			where: baseWhere,
+			select: { id: true, name: true, isStuck: true, difficulty: true, dateSolved: true, nextReviewDate: true, lastReview: true, platform: true, platformRating: true, category: true, fsrsState: true, link: true },
+		}),
+		prisma.review.findMany({
+			where: {
+				userId: session.user.id,
+				date: { gte: thresholdDate },
+			},
+			select: { date: true },
+		}),
+	])
+	const limit = user?.dailyReviewLimit || 20;
+	const focusChips = resolveFocusChips(user?.focusTags ?? []);
 
 	let totalDue = 0;
 	let reviewedToday = 0;
@@ -110,44 +121,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         { name: "Flowing", value: flowingCount }
     ];
 
-    const thresholdTime = todayStart.getTime() - 91 * 24 * 60 * 60 * 1000;
-
-    const thresholdDate = new Date(thresholdTime);
-    const reviews = await prisma.review.findMany({
-        where: {
-            userId: session.user.id,
-            date: { gte: thresholdDate },
-        },
-        select: { date: true },
-    })
-
     const reviewsByDay: Record<string, number> = {}
     for (const r of reviews) {
         const key = format(new Date(r.date).getTime(), "yyyy-MM-dd")
         reviewsByDay[key] = (reviewsByDay[key] || 0) + 1
     }
 
+	// The rendered heatmap only spans the last 90 days, so skip older solves up
+	// front instead of bucketing all history and discarding it afterwards.
 	const heatmap = problems.reduce((acc, p) => {
 		if (!p.dateSolved) return acc
         const solvedTime = new Date(p.dateSolved).getTime();
+        if (solvedTime < thresholdTime) return acc
 		const key = format(solvedTime, "yyyy-MM-dd")
         if (!acc[key]) acc[key] = { count: 0, problems: [] }
 		acc[key].count += 1
-        
-        // PERFORMANCE BOOST: Only push heavy problem metadata payload for the last 90 days.
-        // This ensures the generic RSC payload size doesn't trend towards infinity over years.
-        if (solvedTime >= thresholdTime) {
-            acc[key].problems.push({ id: p.id, name: p.name, platform: p.platform, difficulty: p.difficulty, platformRating: p.platformRating, link: p.link })
-        }
+        acc[key].problems.push({ id: p.id, name: p.name, platform: p.platform, difficulty: p.difficulty, platformRating: p.platformRating, link: p.link })
 		return acc
 	}, {} as Record<string, { count: number, problems: { id: string, name: string, platform: string | null, difficulty: string, platformRating?: number | null, link: string | null }[] }>)
 
 	const heatmapArray = Object.entries(heatmap)
-      // PERFORMANCE BOOST: Strip all empty days from the payload explicitly, and bound the historical depth to 90 days.
-      .filter(([date, data]) => {
-           const time = new Date(date).getTime();
-           return data.count > 0 && time >= thresholdTime;
-      })
       .map(([date, data]) => ({
 		  date,
 		  count: data.count,
