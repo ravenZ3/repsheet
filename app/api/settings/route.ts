@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
-import { parseFocusTags, formatFocusTag } from "@/lib/focusTags";
+import { parseFocusTags, formatFocusTag, isValidFocusTag } from "@/lib/focusTags";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -35,9 +35,18 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle, fsrsTargetRetention, showPatterns, focusTags } = body;
+    const { dailyReviewLimit, leetcodeUsername, codeforcesHandle, fsrsTargetRetention, showPatterns, focusTags, activeFocus } = body;
 
     const updateData: Record<string, unknown> = {};
+    // Active focus mirror for the extension: a well-formed kind:value tag sets
+    // it, explicit null clears it. Written here (a deliberate client POST)
+    // instead of during the review page's GET render, where Link prefetch
+    // could flip it without a real visit.
+    if (activeFocus === null) {
+        updateData.activeFocus = null;
+    } else if (typeof activeFocus === "string" && isValidFocusTag(activeFocus)) {
+        updateData.activeFocus = activeFocus;
+    }
     if (Array.isArray(focusTags)) {
         // Keep only well-formed, de-duplicated kind:value entries.
         updateData.focusTags = parseFocusTags(

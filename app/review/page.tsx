@@ -3,6 +3,7 @@ import { Problem } from '@prisma/client';
 import { startOfDay, endOfDay } from 'date-fns';
 import ReviewPageContent, { type PracticeSuggestion } from '@/components/ReviewPageContent';
 import FocusChips from '@/components/FocusChips';
+import ActiveFocusSync from '@/components/ActiveFocusSync';
 // Import authentication tools
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
@@ -43,18 +44,6 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     });
     limit = user?.dailyReviewLimit || 20;
     focusChips = resolveFocusChips(user?.focusTags ?? []);
-
-    // Persist the active focus so the extension can mirror the review page's
-    // current state. Pattern/skill focus sets it; global/relearning clears it.
-    const activeFocus = patternFilter
-      ? `pattern:${patternFilter}`
-      : topicFilter
-      ? `skill:${topicFilter}`
-      : null;
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { activeFocus },
-    });
 
     reviewedToday = await prisma.problem.count({
       where: {
@@ -128,6 +117,14 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
   const showChips = !topicFilter && !patternFilter && stateFilter !== 'relearning' && focusChips.length > 0;
 
+  // Mirrored to the extension via a client-side POST (see ActiveFocusSync).
+  // Pattern/skill focus sets it; global/relearning clears it.
+  const activeFocus = patternFilter
+    ? `pattern:${patternFilter}`
+    : topicFilter
+    ? `skill:${topicFilter}`
+    : null;
+
   // Remount ReviewPageContent when the focus changes so its useState-derived
   // queue resets instead of showing the previous focus's stale problems.
   const focusKey = patternFilter
@@ -140,6 +137,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
+      <ActiveFocusSync activeFocus={activeFocus} />
       {showChips && (
         <div className="container mx-auto px-4 md:px-6 max-w-6xl pt-4">
           <FocusChips chips={focusChips} />
