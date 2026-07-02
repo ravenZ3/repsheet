@@ -17,21 +17,34 @@ interface ActiveFocusSummary {
   unsolved: UnsolvedRow[];
 }
 
-/** Computes the active-focus label, queue count, and problem rows for the popup. */
-async function computeActiveFocus(
-  userId: string,
+/** The one problem-set fetch this route makes; the union of the fields the
+ * badge counts, skill focus, and pattern focus each need. */
+interface SummaryProblem {
+  id: string;
+  name: string;
+  link: string | null;
+  platform: string | null;
+  category: string[];
+  nextReviewDate: Date | null;
+  lastRating: number | null;
+  stability: number | null;
+  lastReview: Date | null;
+}
+
+/** Computes the active-focus label, queue count, and problem rows for the popup.
+ * Operates on the problems already fetched for the badge counts — no second
+ * full findMany per poll. */
+function computeActiveFocus(
+  problems: SummaryProblem[],
   activeFocus: string | null | undefined,
   now: Date
-): Promise<ActiveFocusSummary | null> {
+): ActiveFocusSummary | null {
   const tag = activeFocus ? parseFocusTag(activeFocus) : null;
   if (!tag) return null;
 
   if (tag.kind === "skill") {
-    const problems = await prisma.problem.findMany({
-      where: { userId, category: { has: tag.value } },
-      select: { name: true, link: true, nextReviewDate: true, stability: true, lastReview: true },
-    });
     const agenda: ProblemRow[] = problems
+      .filter((p) => p.category.includes(tag.value))
       .filter((p) => p.nextReviewDate != null && p.nextReviewDate <= now)
       .map((p) => ({ name: p.name, url: p.link, recall: computeRecall(p, now) }))
       .sort(byRecallAsc);
@@ -39,13 +52,6 @@ async function computeActiveFocus(
   }
 
   // pattern: match the user's problems to the catalog pattern (due + in-progress)
-  const problems = await prisma.problem.findMany({
-    where: { userId },
-    select: {
-      id: true, name: true, link: true, platform: true,
-      nextReviewDate: true, lastRating: true, stability: true, lastReview: true,
-    },
-  });
   const matchable: MatchableProblem[] = problems;
   const view = buildPatternView(getCatalog(), matchable, now).find((v) => v.id === tag.value);
   if (!view) return null;
@@ -88,7 +94,10 @@ export async function GET(req: NextRequest) {
 
     const problems = await prisma.problem.findMany({
       where: { userId },
-      select: { name: true, link: true, nextReviewDate: true, lastReview: true, stability: true },
+      select: {
+        id: true, name: true, link: true, platform: true, category: true,
+        nextReviewDate: true, lastRating: true, stability: true, lastReview: true,
+      },
     });
 
     let totalDue = 0;
@@ -104,7 +113,7 @@ export async function GET(req: NextRequest) {
     dueRows.sort(byRecallAsc);
     const cappedDue = Math.min(totalDue, limit);
 
-    const activeFocus = await computeActiveFocus(userId, user?.activeFocus, now);
+    const activeFocus = computeActiveFocus(problems, user?.activeFocus, now);
 
     // Pills mirror the review page: in a focus they describe the focus, not the
     // global queue (review/page.tsx scopes totalDue to the focus and forces
