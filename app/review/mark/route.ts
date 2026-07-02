@@ -1,16 +1,10 @@
-// --- STEP 1: Correct your imports ---
-import prisma from '@/lib/prisma'; // Use the shared instance
-
+import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { scheduleReview, isReviewDue, isValidRating } from '@/lib/fsrs';
-// Import authentication tools
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
 
-// REMOVE: const prisma = new PrismaClient()
-
 export async function POST(req: NextRequest) {
-  // --- STEP 2: Authenticate the user ---
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
