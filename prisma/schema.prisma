@@ -87,8 +87,11 @@ model Problem {
   category       String[]
   notes          String?
   mistakesMade   String?
-  dateSolved     DateTime? 
-  reviewCount    Int?      @default(0)
+  dateSolved     DateTime?
+  // Non-nullable: capture/mark use `where: { reviewCount: <read value> }` as an
+  // optimistic lock, and Prisma+Mongo `field: null` filters match no rows — a
+  // null here would silently drop the row's first rating.
+  reviewCount    Int       @default(0)
   nextReviewDate DateTime?
   stability      Float?
   fsrsDifficulty Float?
