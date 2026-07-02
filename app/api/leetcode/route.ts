@@ -9,7 +9,9 @@ import { authOptions } from "@/lib/authOptions";
 const LEETCODE_API_ENDPOINT = "https://leetcode.com/graphql";
 const LEETCODE_ALL_PROBLEMS_URL = "https://leetcode.com/api/problems/all/";
 
-// Caching (see note below on serverless environments)
+// Two cache layers: the module-level map is a per-instance parse fast-path;
+// the fetch below carries `next: { revalidate }` so the platform data cache
+// serves the ~3MB list to cold instances instead of refetching LeetCode.
 let problemMap: Map<string, string> | null = null;
 let lastCacheTime: number | null = null;
 const CACHE_DURATION = 1000 * 60 * 60; // Cache for 1 hour
@@ -26,7 +28,7 @@ async function getSlugFromId(id: string): Promise<string | null> {
   if (!problemMap || !lastCacheTime || now - lastCacheTime > CACHE_DURATION) {
     console.log("Refreshing LeetCode problem ID-to-slug cache...");
     try {
-      const response = await fetch(LEETCODE_ALL_PROBLEMS_URL);
+      const response = await fetch(LEETCODE_ALL_PROBLEMS_URL, { next: { revalidate: 3600 } });
       if (!response.ok) throw new Error("Failed to fetch LeetCode problem list");
       const data = await response.json();
       const problems = data.stat_status_pairs as LeetCodeProblemListItem[];
