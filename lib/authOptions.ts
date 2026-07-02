@@ -1,18 +1,14 @@
-// --- STEP 1: Change your imports ---
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
-// REMOVE: import { PrismaClient } from "@prisma/client"
-import prisma from "@/lib/prisma" // IMPORT the shared prisma instance instead
+import prisma from "@/lib/prisma"
 import GitHubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { type NextAuthOptions } from "next-auth"
 import bcrypt from "bcryptjs"
-
-// --- STEP 2: Remove this line ---
-// const prisma = new PrismaClient() // This line is now gone
+import { rateLimit } from "@/lib/rateLimit"
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma), // Now uses the shared instance
+  adapter: PrismaAdapter(prisma),
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID!,
@@ -32,9 +28,16 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Missing email or password");
         }
-        const user = (await prisma.user.findUnique({
+        // Throttle per email: bcrypt makes each attempt expensive, and
+        // unthrottled tries are a brute-force / enumeration vector.
+        const limited = rateLimit(`login:${credentials.email.toLowerCase()}`, 5, 60_000);
+        if (!limited.ok) {
+          throw new Error("Too many login attempts. Try again shortly.");
+        }
+        const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-        })) as unknown as { password?: string | null; id: string } | null;
+          select: { id: true, password: true },
+        });
         if (!user || !user.password) {
           throw new Error("Invalid credentials");
         }
@@ -42,12 +45,13 @@ export const authOptions: NextAuthOptions = {
         if (!isValid) {
           throw new Error("Invalid credentials");
         }
-        return user;
+        return { id: user.id };
       }
     }),
   ],
 
-  // --- STEP 3: ADD THIS ENTIRE `callbacks` OBJECT ---
+  // Copy the user id onto the JWT (and from there onto the session) so API
+  // routes can authorize by session.user.id.
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -62,7 +66,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  
+
   secret: process.env.NEXTAUTH_SECRET,
   session: {
     strategy: "jwt",
