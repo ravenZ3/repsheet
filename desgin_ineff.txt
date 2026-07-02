@@ -74,31 +74,38 @@ MEDIUM
     to the browser for search caching.
     Fix: select only the fields the list UI renders.
 
-#10. Signup race → wrong status code  [NOT FIXED — by choice]
-    Check-then-create: concurrent same-email signups → P2002 surfaces as 500
-    instead of 409. Also 6-char password minimum is weak; no rate limiting on
+#10. Signup race → wrong status code  [FIXED]
+    Check-then-create: concurrent same-email signups → P2002 surfaced as 500
+    instead of 409. Also 6-char password minimum was weak; no rate limiting on
     credentials endpoints (bcrypt = cheap DoS/enumeration target).
+    Fix: P2002 caught as 409; password min 8; in-memory sliding-window rate
+    limit (lib/rateLimit.ts) on signup (per IP) and login (per email).
 
 ================================================================
-MINOR / HYGIENE  [NOT FIXED — by choice]
+MINOR / HYGIENE
 ================================================================
 
-#11. proxy.ts matcher doesn't cover /patterns — page-level redirect saves it,
-     but the middleware allowlist is now misleading.
+#11. proxy.ts matcher doesn't cover /patterns  [FIXED]
+     Added /patterns + /patterns/:path* to the middleware matcher.
 
-#12. Dashboard over-computes: heatmap reduce over all history then filters to
-     90 days; filter dateSolved >= threshold in the query instead.
+#12. Dashboard over-computes  [FIXED]
+     Heatmap reduce skips solves older than the 90-day window up front
+     instead of bucketing all history and discarding it afterwards.
 
-#13. Module-level cache in app/api/leetcode/route.ts — per-instance, unbounded,
-     serverless-fragile (its own comment admits it).
+#13. Module-level cache in app/api/leetcode/route.ts  [FIXED]
+     The all-problems fetch now carries next:{revalidate:3600} so the
+     platform data cache serves cold instances; the in-memory map stays as a
+     per-instance parse fast-path.
 
-#14. Sequential independent awaits (review/mark problem+user, dashboard
-     count→user→problems chain) — Promise.all the independent ones.
-     (mark route's pair was parallelized as part of #7.)
+#14. Sequential independent awaits  [FIXED]
+     Dashboard user/problems/reviews reads run under Promise.all (mark
+     route's pair was parallelized as part of #7).
 
-#15. authOptions.ts `as unknown as {...}` double-cast to smuggle password past
-     types; tutorial-comment residue (--- STEP 1 ---, "REMOVE:") in
+#15. authOptions.ts weak typing + tutorial residue  [FIXED]
+     Credentials query uses a typed select {id, password} instead of the
+     `as unknown as` double-cast; --- STEP N --- comments removed from
      authOptions.ts and review/mark/route.ts.
 
-#16. Zombie code: test_leetcode.js at repo root (hardcoded handle);
-     scripts/lookup-problem.js untracked — keep or delete.
+#16. Zombie code  [FIXED]
+     test_leetcode.js and scripts/lookup-problem.js moved to test-scripts/
+     (gitignored, untracked).
