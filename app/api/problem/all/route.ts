@@ -13,10 +13,31 @@ export async function GET() {
 			)
 		}
 
-		// Fetch all problems for the logged-in user, but limited to a safe max for client-side search caching
+		// Fetch all problems for the logged-in user, but limited to a safe max for client-side search caching.
+		// Select only what the list/search/detail UI renders — notes/mistakesMade stay
+		// because ProblemDetail renders straight from this cache, but internal FSRS
+		// parameters (stability, fsrsDifficulty, fsrsState, lastRating) and plumbing
+		// ids never reach the client UI.
 		const problems = await prisma.problem.findMany({
 			where: {
 				userId: session.user.id,
+			},
+			select: {
+				id: true,
+				name: true,
+				platform: true,
+				link: true,
+				difficulty: true,
+				isStuck: true,
+				isStarred: true,
+				category: true,
+				notes: true,
+				mistakesMade: true,
+				dateSolved: true,
+				reviewCount: true,
+				nextReviewDate: true,
+				lastReview: true,
+				platformRating: true,
 			},
 			orderBy: {
 				dateSolved: "desc",
