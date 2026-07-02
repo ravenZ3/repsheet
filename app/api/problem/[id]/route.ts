@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { Problem } from "@prisma/client";
+import { Difficulty } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/authOptions";
+import { z } from "zod";
+
+// Field allowlist AND type validation: without the schema, a bad
+// difficulty/category type reaches Prisma and surfaces as a 500, and an empty
+// name would be written silently.
+const patchSchema = z.object({
+  name: z.string().trim().min(1, "Name cannot be empty").optional(),
+  platform: z.string().trim().min(1, "Platform cannot be empty").optional(),
+  notes: z.string().nullable().optional(),
+  mistakesMade: z.string().nullable().optional(),
+  difficulty: z.nativeEnum(Difficulty).optional(),
+  isStuck: z.boolean().optional(),
+  isStarred: z.boolean().optional(),
+  category: z
+    .array(z.string())
+    .transform((tags) => tags.map((t) => t.trim()).filter(Boolean))
+    .refine((tags) => tags.length > 0, { message: "Category cannot be empty" })
+    .optional(),
+});
 
 /**
  * Handles fetching a single problem securely.
@@ -68,15 +87,15 @@ export async function PATCH(
       return NextResponse.json({ success: false, message: "Could not determine problem ID" }, { status: 400 });
     }
 
-    const updateData: Partial<Problem> = {};
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.platform !== undefined) updateData.platform = body.platform;
-    if (body.notes !== undefined) updateData.notes = body.notes;
-    if (body.mistakesMade !== undefined) updateData.mistakesMade = body.mistakesMade;
-    if (body.difficulty !== undefined) updateData.difficulty = body.difficulty;
-    if (body.isStuck !== undefined) updateData.isStuck = body.isStuck;
-    if (body.isStarred !== undefined) updateData.isStarred = body.isStarred;
-    if (body.category !== undefined) updateData.category = body.category;
+    const parsed = patchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, message: parsed.error.issues[0].message }, { status: 400 });
+    }
+
+    // Only forward the keys the client actually sent.
+    const updateData = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, v]) => v !== undefined)
+    );
     const updateResult = await prisma.problem.updateMany({
       where: {
         id: id,

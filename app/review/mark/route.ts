@@ -2,7 +2,7 @@
 import prisma from '@/lib/prisma'; // Use the shared instance
 
 import { NextRequest, NextResponse } from 'next/server';
-import { scheduleReview, isReviewDue } from '@/lib/fsrs';
+import { scheduleReview, isReviewDue, isValidRating } from '@/lib/fsrs';
 // Import authentication tools
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/authOptions';
@@ -19,32 +19,33 @@ export async function POST(req: NextRequest) {
   try {
     const { id, rating } = await req.json();
 
-    if (!id || typeof rating !== 'number' || rating < 1 || rating > 4) {
+    if (typeof id !== 'string' || id.length === 0 || !isValidRating(rating)) {
       return NextResponse.json({ error: 'Invalid problem ID or rating' }, { status: 400 });
     }
 
-    // --- STEP 3: Securely find the problem ---
-    // Fetch the problem only if it belongs to the logged-in user.
-    const problem = await prisma.problem.findFirst({
-      where: {
-        id,
-        userId: session.user.id, // <-- SECURITY CHECK
-      },
-      select: {
-        stability: true,
-        fsrsDifficulty: true,
-        fsrsState: true,
-        reviewCount: true,
-        nextReviewDate: true,
-        lastRating: true,
-        lastReview: true,
-      },
-    });
-
-    const userSettings = await prisma.user.findUnique({
+    // Fetch the problem (only if it belongs to the logged-in user) and the
+    // user's FSRS settings in parallel — independent reads.
+    const [problem, userSettings] = await Promise.all([
+      prisma.problem.findFirst({
+        where: {
+          id,
+          userId: session.user.id, // <-- SECURITY CHECK
+        },
+        select: {
+          stability: true,
+          fsrsDifficulty: true,
+          fsrsState: true,
+          reviewCount: true,
+          nextReviewDate: true,
+          lastRating: true,
+          lastReview: true,
+        },
+      }),
+      prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { fsrsTargetRetention: true }
-    });
+        select: { fsrsTargetRetention: true },
+      }),
+    ]);
 
     if (!problem) {
       return NextResponse.json({ error: 'Problem not found or you do not have permission' }, { status: 404 });

@@ -95,7 +95,8 @@ export function isReviewDue(
   return !problem.nextReviewDate || problem.nextReviewDate <= now;
 }
 
-/** Valid FSRS ratings: 1=Again, 2=Hard, 3=Good, 4=Easy. */
+/** Valid FSRS ratings: 1=Again, 2=Hard, 3=Good, 4=Easy. Must be an integer —
+ * `fsrs.repeat()[rating]` on a fractional rating indexes undefined and crashes. */
 export function isValidRating(rating: unknown): rating is number {
-  return typeof rating === "number" && rating >= 1 && rating <= 4;
+  return typeof rating === "number" && Number.isInteger(rating) && rating >= 1 && rating <= 4;
 }
