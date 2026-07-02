@@ -54,9 +54,19 @@ export async function POST() {
       }
     }
 
+    // Build candidate rows first, then dedupe against the DB in ONE query and
+    // insert in ONE createMany — instead of a findFirst + create per problem.
+    interface CfCandidate {
+      name: string;
+      link: string;
+      rating: number | null;
+      tags: string[];
+      solvedAt: Date;
+    }
+    const candidates: CfCandidate[] = [];
     for (const [name, sub] of uniqueProblems.entries()) {
       const p = sub.problem;
-      
+
       const contestId = p.contestId;
       const index = p.index;
       if (!contestId || !index) {
@@ -68,42 +78,59 @@ export async function POST() {
       const isGym = contestId >= 100000;
       const computedLink = isGym ? `https://codeforces.com/gym/${contestId}/problem/${index}` : `https://codeforces.com/contest/${contestId}/problem/${index}`;
 
-      // Duplicate Checking relying strictly on application-layer logic (because MongoDB Index crashed earlier)
-      const existing = await prisma.problem.findFirst({
-        where: { userId: session.user.id, link: computedLink }
+      candidates.push({
+        name,
+        link: computedLink,
+        rating: p.rating || null,
+        tags: p.tags || [],
+        solvedAt: new Date(Number(sub.creationTimeSeconds) * 1000),
       });
-
-      if (existing) {
-        skipped++;
-        continue;
-      }
-
-      // Elo extraction scaling
-      const rating = p.rating || null;
-      let difficulty = "Medium";
-      if (rating) {
-        if (rating <= 1200) difficulty = "Easy";
-        else if (rating >= 1900) difficulty = "Hard";
-      }
-
-      // Database Record Hydration
-      await prisma.problem.create({
-        data: {
-          userId: session.user.id,
-          name: name,
-          platform: "Codeforces",
-          link: computedLink,
-          difficulty: difficulty as "Easy" | "Medium" | "Hard",
-          category: p.tags || [],
-          dateSolved: new Date(Number(sub.creationTimeSeconds) * 1000),
-          nextReviewDate: new Date(Number(sub.creationTimeSeconds) * 1000),
-          isStuck: false,
-          reviewCount: 0,
-          platformRating: rating,
-        }
-      });
-      synced++;
     }
+
+    // Duplicate check keyed by link — the same key the extension capture and
+    // LeetCode sync use — with a name fallback for legacy rows.
+    const existing = candidates.length > 0 ? await prisma.problem.findMany({
+      where: {
+        userId: session.user.id,
+        OR: [
+          { link: { in: candidates.map((c) => c.link) } },
+          { name: { in: candidates.map((c) => c.name) } },
+        ],
+      },
+      select: { link: true, name: true },
+    }) : [];
+    const existingLinks = new Set(existing.map((e) => e.link));
+    const existingNames = new Set(existing.map((e) => e.name));
+
+    const toCreate = candidates.filter((c) => !existingLinks.has(c.link) && !existingNames.has(c.name));
+    skipped += candidates.length - toCreate.length;
+
+    if (toCreate.length > 0) {
+      await prisma.problem.createMany({
+        data: toCreate.map((c) => {
+          // Elo extraction scaling
+          let difficulty = "Medium";
+          if (c.rating) {
+            if (c.rating <= 1200) difficulty = "Easy";
+            else if (c.rating >= 1900) difficulty = "Hard";
+          }
+          return {
+            userId: session.user.id,
+            name: c.name,
+            platform: "Codeforces",
+            link: c.link,
+            difficulty: difficulty as "Easy" | "Medium" | "Hard",
+            category: c.tags,
+            dateSolved: c.solvedAt,
+            nextReviewDate: c.solvedAt,
+            isStuck: false,
+            reviewCount: 0,
+            platformRating: c.rating,
+          };
+        }),
+      });
+    }
+    synced = toCreate.length;
 
     if (newHighestCursor > lastSyncCursor) {
       await prisma.user.update({

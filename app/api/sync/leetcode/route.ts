@@ -42,76 +42,90 @@ export async function POST() {
          throw new Error("Invalid response from LeetCode or username not found.");
     }
 
-    let synced = 0;
-    let skipped = 0;
     // Delta Optimization via Pseudo-Cursor Timestamps
     const lastSyncTime = user.leetcodeLastSyncDate ? Math.floor(user.leetcodeLastSyncDate.getTime() / 1000) : 0;
     let newSyncTime = lastSyncTime;
 
-    const newSubmissions = [];
+    // The recent list can carry several ACs of the same problem (re-submits);
+    // it's newest-first, so the first occurrence per slug wins. Dedupe here in
+    // memory — the insert below is a single batched createMany.
+    const newBySlug = new Map<string, { title: string; slug: string; timestamp: number }>();
     for (const sub of submissions) {
         const subTime = Number(sub.timestamp);
-        if (subTime > lastSyncTime) {
+        if (subTime > lastSyncTime && sub.titleSlug) {
             newSyncTime = Math.max(newSyncTime, subTime);
-            newSubmissions.push(sub);
+            if (!newBySlug.has(sub.titleSlug)) {
+                newBySlug.set(sub.titleSlug, { title: sub.title, slug: sub.titleSlug, timestamp: subTime });
+            }
         }
     }
 
-    // 2. Safely Upsert
-    for (const sub of newSubmissions) {
-      const slug = sub.titleSlug;
-      if (!slug) continue;
+    const candidates = Array.from(newBySlug.values()).map((c) => ({
+        ...c,
+        link: `https://leetcode.com/problems/${c.slug}/`,
+    }));
 
-      // Duplicate Checking (Strict No-Op to protect existing Repsheet metadata like notes and dates)
-      const existing = await prisma.problem.findFirst({
-        where: { userId: session.user.id, name: sub.title }
-      });
+    // 2. Duplicate check in ONE query (strict no-op to protect existing Repsheet
+    // metadata like notes and dates). Keyed by link — the same key the extension
+    // capture and Codeforces sync use — with a name fallback so rows created by
+    // the old name-keyed sync still dedupe.
+    const existing = candidates.length > 0 ? await prisma.problem.findMany({
+        where: {
+            userId: session.user.id,
+            OR: [
+                { link: { in: candidates.map((c) => c.link) } },
+                { name: { in: candidates.map((c) => c.title) } },
+            ],
+        },
+        select: { link: true, name: true },
+    }) : [];
+    const existingLinks = new Set(existing.map((e) => e.link));
+    const existingNames = new Set(existing.map((e) => e.name));
 
-      if (existing) {
-        skipped++;
-        continue;
-      }
+    const toCreate = candidates.filter((c) => !existingLinks.has(c.link) && !existingNames.has(c.title));
+    const skipped = candidates.length - toCreate.length;
 
-      // 3. Fallback: Request metadata like difficulty directly
-      const qdQuery = {
-        operationName: "questionData",
-        variables: { titleSlug: slug },
-        query: `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { difficulty topicTags { name } } }`
-      };
-
-      const qdRes = await fetch(LEETCODE_API_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Referer": "https://leetcode.com/" },
-        body: JSON.stringify(qdQuery),
-      });
-
-      const qdData = await qdRes.json();
-      const question = qdData?.data?.question;
-      
-      let difficulty = "Medium";
-      let tags: string[] = [];
-      if (question) {
-        if (question.difficulty) difficulty = question.difficulty;
-        if (question.topicTags) tags = question.topicTags.map((t: { name: string }) => t.name);
-      }
-
-      // 4. Create new DB record
-      await prisma.problem.create({
-        data: {
-          userId: session.user.id,
-          name: sub.title,
-          platform: "LeetCode",
-          link: `https://leetcode.com/problems/${slug}/`,
-          difficulty: difficulty as "Easy" | "Medium" | "Hard",
-          category: tags,
-          dateSolved: new Date(Number(sub.timestamp) * 1000),
-          nextReviewDate: new Date(Number(sub.timestamp) * 1000),
-          isStuck: false,
-          reviewCount: 0,
+    // 3. Metadata (difficulty/tags) fetches in parallel instead of serially.
+    const metadata = await Promise.all(toCreate.map(async (c) => {
+        try {
+            const qdRes = await fetch(LEETCODE_API_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Referer": "https://leetcode.com/" },
+                body: JSON.stringify({
+                    operationName: "questionData",
+                    variables: { titleSlug: c.slug },
+                    query: `query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { difficulty topicTags { name } } }`
+                }),
+            });
+            const qdData = await qdRes.json();
+            const question = qdData?.data?.question;
+            return {
+                difficulty: question?.difficulty || "Medium",
+                tags: question?.topicTags?.map((t: { name: string }) => t.name) ?? [],
+            };
+        } catch {
+            return { difficulty: "Medium", tags: [] as string[] };
         }
-      });
-      synced++;
+    }));
+
+    // 4. Single batched insert
+    if (toCreate.length > 0) {
+        await prisma.problem.createMany({
+            data: toCreate.map((c, i) => ({
+                userId: session.user.id,
+                name: c.title,
+                platform: "LeetCode",
+                link: c.link,
+                difficulty: metadata[i].difficulty as "Easy" | "Medium" | "Hard",
+                category: metadata[i].tags,
+                dateSolved: new Date(c.timestamp * 1000),
+                nextReviewDate: new Date(c.timestamp * 1000),
+                isStuck: false,
+                reviewCount: 0,
+            })),
+        });
     }
+    const synced = toCreate.length;
 
     // Safely bump the high-water extraction cursor
     if (newSyncTime > lastSyncTime) {
