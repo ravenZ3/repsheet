@@ -1,0 +1,104 @@
+RepSheet — Design Inefficiencies & Weak Practices Audit
+Date: 2026-07-02
+Scope: prisma schema, all API routes, dashboard/review/patterns pages, shared libs.
+Status markers updated as fixes land.
+
+================================================================
+HIGH IMPACT
+================================================================
+
+#1. Zero database indexes — every query is a MongoDB collection scan  [FIXED]
+    prisma/schema.prisma has no @@index anywhere. Prisma+Mongo does NOT
+    auto-index relation fields. Every `where: { userId }` on Problem (used by
+    every page and endpoint) scans the entire collection across all users.
+    Same for Review queries by userId+date. Degrades linearly with total data;
+    extension badge polling multiplies it.
+    Fix: @@index([userId, nextReviewDate]) and @@index([userId, link]) on
+    Problem; @@index([userId, date]) on Review.
+
+#2. DB write on every GET — app/review/page.tsx  [FIXED]
+    The review page ran prisma.user.update({ data: { activeFocus } }) during
+    server-component render. Side effects on GET: Next.js <Link> prefetching
+    can fire it without a real visit, silently flipping activeFocus and
+    desyncing the extension; two open tabs fight; blocks render with a write.
+    Fix: client component POSTs the focus change to /api/settings after mount.
+
+#3. Sync data-loss windows (both platforms)  [NOT FIXED — by choice]
+    - LeetCode sync: recentAcSubmissionList caps at 20 regardless of `limit`
+      (verified live), yet the cursor jumps past the whole batch. Solving 20+
+      problems between syncs permanently skips the older ones. Strict `>`
+      compare also drops a second AC in the same cursor second.
+    - Codeforces sync: same shape, 1000-item window (safer). Submissions
+      skipped for missing contestId/index still advance the cursor, never
+      retried.
+
+#4. Inconsistent dedupe keys across write paths  [FIXED]
+    LeetCode sync deduped by NAME; Codeforces sync + extension capture dedupe
+    by LINK; manual add doesn't dedupe. This is how duplicate rows happened
+    (observed: Word Search II, Combination Sum II, Max Consecutive Ones III
+    duplicated). Fix: both syncs now dedupe by link with name fallback for
+    legacy rows, matching the capture endpoint's key.
+
+================================================================
+MEDIUM
+================================================================
+
+#5. N+1 queries + sequential awaits in both syncs  [FIXED]
+    Per new submission: findFirst → external metadata fetch → create, all
+    sequential. One sync of 20 new problems ≈ 60 round trips.
+    Fix: one findMany for existing rows, Promise.all'd metadata fetches,
+    single createMany insert.
+
+#6. Extension summary fetches the full problem set twice per poll  [FIXED]
+    GET /api/extension/summary did problem.findMany for badge counts, then
+    computeActiveFocus did a second full findMany. Hottest (polled) path,
+    double duty on an unindexed collection.
+    Fix: fetch once with the union of needed fields, pass down.
+
+#7. PATCH /api/problem/[id] and review/mark trust the client's types  [FIXED]
+    PATCH allowlisted fields but had no validation — difficulty:"banana" or
+    category:"string" reached Prisma and 500'd; name:"" corrupted silently.
+    mark route hand-rolled checks, never verified id's type, duplicated the
+    rating check instead of using isValidRating.
+    Fix: zod schemas on both; mark reuses isValidRating.
+
+#8. reviewCount Int? nullable undermines the optimistic lock  [FIXED]
+    capture + mark guard concurrency with where:{ reviewCount: <read value> },
+    and Prisma+Mongo `field: null` filters match no rows. Any write path that
+    omits reviewCount recreates the "first rating silently dropped" bug fixed
+    twice already (commits 77b1938, 26095b3).
+    Fix: backfill nulls to 0, then reviewCount Int @default(0) non-nullable.
+
+#9. GET /api/problem/all ships everything  [FIXED]
+    No select, take:2000 — full rows including notes/mistakesMade blobs sent
+    to the browser for search caching.
+    Fix: select only the fields the list UI renders.
+
+#10. Signup race → wrong status code  [NOT FIXED — by choice]
+    Check-then-create: concurrent same-email signups → P2002 surfaces as 500
+    instead of 409. Also 6-char password minimum is weak; no rate limiting on
+    credentials endpoints (bcrypt = cheap DoS/enumeration target).
+
+================================================================
+MINOR / HYGIENE  [NOT FIXED — by choice]
+================================================================
+
+#11. proxy.ts matcher doesn't cover /patterns — page-level redirect saves it,
+     but the middleware allowlist is now misleading.
+
+#12. Dashboard over-computes: heatmap reduce over all history then filters to
+     90 days; filter dateSolved >= threshold in the query instead.
+
+#13. Module-level cache in app/api/leetcode/route.ts — per-instance, unbounded,
+     serverless-fragile (its own comment admits it).
+
+#14. Sequential independent awaits (review/mark problem+user, dashboard
+     count→user→problems chain) — Promise.all the independent ones.
+     (mark route's pair was parallelized as part of #7.)
+
+#15. authOptions.ts `as unknown as {...}` double-cast to smuggle password past
+     types; tutorial-comment residue (--- STEP 1 ---, "REMOVE:") in
+     authOptions.ts and review/mark/route.ts.
+
+#16. Zombie code: test_leetcode.js at repo root (hardcoded handle);
+     scripts/lookup-problem.js untracked — keep or delete.
